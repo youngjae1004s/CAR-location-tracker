@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 페이지</title>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  <style>
+    body { font-family: 'Malgun Gothic', sans-serif; margin:20px; background:#f5f7fa; }
+    table { width:100%; border-collapse:collapse; margin-top:20px; }
+    th, td { border:1px solid #ddd; padding:12px; text-align:left; }
+    th { background:#2c3e50; color:white; }
+    select, button { padding:8px; border-radius:6px; }
+  </style>
+</head>
+<body>
+  <h1>관리자 페이지</h1>
+
+  <!-- 비밀번호 입력 (최초 1회) -->
+  <div id="loginBox">
+    <input type="password" id="adminPass" placeholder="관리자 비밀번호 입력" style="padding:12px; width:300px;">
+    <button onclick="checkPassword()">로그인</button>
+  </div>
+
+  <div id="adminContent" style="display:none;">
+    <h2>사용자 목록</h2>
+    <table id="userTable">
+      <thead>
+        <tr><th>UID</th><th>차량번호</th><th>업무</th><th>마지막 위치 시간</th><th>변경</th></tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script>
+    const config = { /* 기존 Firebase config 복사 */ };
+    firebase.initializeApp(config);
+    const db = firebase.database();
+
+    const ADMIN_PASSWORD = "your_secure_password_123"; // ← 여기 비밀번호 변경하세요!
+
+    function checkPassword() {
+      const pass = document.getElementById('adminPass').value;
+      if (pass === ADMIN_PASSWORD) {
+        document.getElementById('loginBox').style.display = 'none';
+        document.getElementById('adminContent').style.display = 'block';
+        loadUsers();
+      } else {
+        alert("비밀번호 틀렸습니다.");
+      }
+    }
+
+    function loadUsers() {
+      db.ref('users').on('value', snap => {
+        const tbody = document.querySelector('#userTable tbody');
+        tbody.innerHTML = '';
+        snap.forEach(child => {
+          const data = child.val();
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${child.key}</td>
+            <td>${data.carNum || '-'}</td>
+            <td>
+              <select onchange="updateTask('${child.key}', this.value)">
+                <option value="전체" ${data.task==='전체'?'selected':''}>전체</option>
+                <option value="1" ${data.task==='1'?'selected':''}>1</option>
+                <option value="2" ${data.task==='2'?'selected':''}>2</option>
+                <option value="3" ${data.task==='3'?'selected':''}>3</option>
+                <option value="4" ${data.task==='4'?'selected':''}>4</option>
+              </select>
+            </td>
+            <td>${data.timestamp ? new Date(data.timestamp).toLocaleString('ko-KR') : '-'}</td>
+            <td><button onclick="sendTestDelivery('${child.key}')">테스트 전달</button></td>
+          `;
+          tbody.appendChild(tr);
+        });
+      });
+    }
+
+    function updateTask(uid, newTask) {
+      db.ref('users/' + uid).update({ task: newTask });
+      alert("업무가 변경되었습니다.");
+    }
+
+    function sendTestDelivery(uid) {
+      db.ref('adminDeliveries/' + uid).set({
+        photoUrl: "https://picsum.photos/400/300",
+        memo: "관리자 테스트 전달입니다!\n오늘도 안전운전하세요.",
+        timestamp: Date.now()
+      });
+      alert("테스트 사진/메모 전송 완료!");
+    }
+  </script>
+</body>
+</html>
