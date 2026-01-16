@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>차량 위치 전송</title>
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#27ae60">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+    <!-- Kakao SDK (카톡 공유용) -->
+    <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
+    <style>
+        body { margin:0; font-family:'Malgun Gothic',sans-serif; background:#f5f7fa; min-height:100vh; display:flex; justify-content:center; align-items:center; }
+        .card { width:92%; max-width:420px; background:white; border-radius:24px; padding:28px 20px; box-shadow:0 12px 40px rgba(0,0,0,0.08); }
+        h2 { text-align:center; margin:0 0 24px; color:#2c3e50; font-size:24px; }
+        label { display:block; margin-bottom:6px; font-weight:bold; font-size:15px; }
+        select, input[type="text"] { width:100%; padding:14px; margin-bottom:20px; border:1px solid #ddd; border-radius:12px; font-size:16px; box-sizing:border-box; }
+        .tracking-container { position:relative; margin:24px 0 32px; }
+        #toggleBtn {
+            width:100%; height:160px; border:none; border-radius:28px; font-size:24px; font-weight:bold; color:white; cursor:pointer;
+            display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; box-shadow:0 8px 25px rgba(0,0,0,0.15);
+        }
+        #toggleBtn.btn-start { background:linear-gradient(135deg,#27ae60,#2ecc71); }
+        #toggleBtn.btn-stop { background:linear-gradient(135deg,#e74c3c,#c0392b); }
+        #toggleBtn .icon { font-size:60px; }
+        #pipBtn {
+            position:absolute; bottom:10px; right:10px; width:50px; height:50px; background:rgba(255,255,255,0.8); border-radius:50%;
+            border:2px solid #3498db; font-size:24px; color:#3498db; cursor:pointer; display:flex; align-items:center; justify-content:center;
+            box-shadow:0 4px 12px rgba(0,0,0,0.2); opacity:0.7; transition:all 0.2s;
+        }
+        #pipBtn:hover { opacity:1; transform:scale(1.1); }
+        .media-group { display:flex; justify-content:space-between; gap:10px; margin:0 0 28px; }
+        .media-btn { flex:1; padding:16px 8px; border:none; border-radius:16px; font-size:14px; font-weight:bold; color:white; cursor:pointer; }
+        .media-btn.photo { background:#3498db; }
+        .media-btn.voice { background:#9b59b6; }
+        .media-btn.file  { background:#f39c12; }
+        .status { padding:14px; border-radius:12px; text-align:center; font-weight:bold; margin:12px 0; }
+        #trackingStatus { display:none; background:#e74c3c; color:white; }
+        #adminDeliveryArea { margin-top:32px; padding:16px; background:#f1f8ff; border-radius:16px; border:1px solid #d1e8ff; }
+        #adminDeliveryArea h4 { margin:0 0 12px; color:#2c3e50; font-size:17px; }
+        #adminPhotoImg { max-width:100%; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); display:none; }
+        #adminMemo { margin-top:12px; white-space:pre-wrap; color:#34495e; font-size:15px; line-height:1.5; }
+        #adminTime { font-size:13px; color:#7f8c8d; margin-top:8px; text-align:right; }
+        .modal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); justify-content:center; align-items:flex-end; z-index:1000; }
+        .modal.active { display:flex; }
+        .sheet { width:100%; max-width:420px; background:white; border-radius:20px 20px 0 0; padding:24px; max-height:80vh; overflow-y:auto; }
+        .preview { max-width:100%; max-height:220px; border-radius:12px; margin:12px 0; display:block; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>🚗 차량 위치 전송</h2>
+
+        <div id="trackingStatus" class="status">📍 위치 전송 중... (탭 닫으면 즉시 중단됨)</div>
+
+        <label>차량번호</label>
+        <select id="carNumSelect" onchange="updateCarNumInput(this.value)">
+            <option value="">새 차량번호 입력...</option>
+        </select>
+        <input type="text" id="carNum" placeholder="새 차량번호 입력 (예: 12가3456)" style="display:none;">
+
+        <label>업무 (관리자 지정)</label>
+        <div class="status" style="background:#f8f9fa; color:#2c3e50;">
+            <strong id="taskText">로딩 중...</strong>
+        </div>
+
+        <div class="tracking-container">
+            <button id="toggleBtn" class="btn-start" onclick="toggleTracking()">
+                <span class="icon">📍</span>
+                위치 전송 시작
+            </button>
+            <button id="pipBtn" onclick="togglePiP()" title="작은 화면 보기">🪟</button>
+        </div>
+
+        <div class="media-group">
+            <button class="media-btn photo" onclick="openMediaModal('photo')">📸 사진</button>
+            <button class="media-btn voice" onclick="alert('음성 녹음 준비중')">🎤 음성</button>
+            <button class="media-btn file" onclick="openMediaModal('file')">📎 파일</button>
+        </div>
+
+        <div id="adminDeliveryArea">
+            <h4>📢 관리자 전달사항</h4>
+            <img id="adminPhotoImg" src="" alt="관리자 전달 사진">
+            <div id="adminMemo"></div>
+            <div id="adminTime"></div>
+        </div>
+
+        <div id="status" class="status" style="background:#ecf0f1; color:#7f8c8d;">대기 중...</div>
+    </div>
+
+    <!-- 미디어 공유 모달 -->
+    <div id="mediaModal" class="modal">
+        <div class="sheet">
+            <h3 id="modalTitle">공유하기</h3>
+            <div id="mediaContent"></div>
+            <div style="margin-top:20px; display:flex; gap:12px;">
+                <button id="shareKakao" class="btn" style="flex:1; background:#FEE500; color:#3c1e1e;" onclick="shareToKakao()">카카오톡</button>
+                <button id="shareSystem" class="btn" style="flex:1; background:#3498db;" onclick="shareWithSystem()">시스템 공유</button>
+            </div>
+            <button class="btn" style="background:#95a5a6; margin-top:12px; width:100%;" onclick="closeModal()">취소</button>
+        </div>
+    </div>
+
+    <script>
+        // Firebase 초기화
+        const firebaseConfig = {
+            apiKey: "AIzaSyBX2ieZnauY9diJgbIFJWLqnyvxoj9V-mU",
+            authDomain: "planning-with-ai-375ee.firebaseapp.com",
+            databaseURL: "https://planning-with-ai-375ee-default-rtdb.firebaseio.com",
+            projectId: "planning-with-ai-375ee",
+            storageBucket: "planning-with-ai-375ee.firebasestorage.app",
+            messagingSenderId: "910018296712",
+            appId: "1:910018296712:web:f708bcde9467a2ffea583d"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        const auth = firebase.auth();
+
+        // Kakao 초기화 (실제 앱 키로 교체하세요)
+        Kakao.init('YOUR_KAKAO_JAVASCRIPT_KEY_HERE'); // ← 여기에 본인 JS 키 입력!!
+
+        let myId = null;
+        let watchId = null;
+        let isTracking = false;
+        let lastDeliveryTime = 0;
+        let currentMedia = null; // {type, file, previewUrl}
+
+        let savedCarNums = JSON.parse(localStorage.getItem('savedCarNumbers') || '[]');
+        savedCarNums = [...new Set(savedCarNums)].slice(0, 10).reverse();
+
+        window.addEventListener('load', () => {
+            const select = document.getElementById('carNumSelect');
+            savedCarNums.forEach(num => {
+                const opt = document.createElement('option');
+                opt.value = num;
+                opt.textContent = num;
+                select.appendChild(opt);
+            });
+        });
+
+        function updateCarNumInput(value) {
+            const input = document.getElementById('carNum');
+            input.style.display = value === "" ? 'block' : 'none';
+            if (value !== "") input.value = value;
+            else input.value = '';
+        }
+
+        auth.signInAnonymously()
+            .then(cred => {
+                myId = cred.user.uid;
+                loadUserData();
+                listenAdminDelivery();
+            })
+            .catch(err => alert("인증 오류: " + err.message));
+
+        function loadUserData() {
+            db.ref('users/' + myId).on('value', snap => {
+                document.getElementById('taskText').textContent = snap.val()?.task || '전체';
+            });
+        }
+
+        function listenAdminDelivery() {
+            db.ref('adminDeliveries/' + myId).on('value', snap => {
+                const data = snap.val();
+                if (!data) return;
+
+                const { photoUrl, memo, timestamp } = data;
+
+                if (timestamp > lastDeliveryTime) {
+                    lastDeliveryTime = timestamp;
+                    vibratePhone();
+                    playNotificationSound();
+
+                    const img = document.getElementById('adminPhotoImg');
+                    if (photoUrl) {
+                        img.src = photoUrl;
+                        img.style.display = 'block';
+                    } else {
+                        img.style.display = 'none';
+                    }
+
+                    document.getElementById('adminMemo').textContent = memo || '';
+                    document.getElementById('adminTime').textContent = new Date(timestamp).toLocaleString('ko-KR');
+                }
+            });
+        }
+
+        function vibratePhone() {
+            if (navigator.vibrate) navigator.vibrate([500, 200, 500]);
+        }
+
+        function playNotificationSound() {
+            const audio = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alert-quick-chime-766.mp3');
+            audio.play().catch(() => {});
+        }
+
+        // 위치 전송 토글 (생략 - 이전과 동일, 필요 시 말씀해주세요)
+
+        // 미디어 모달 열기
+        function openMediaModal(type) {
+            const titles = { photo: '사진 보내기', file: '파일 첨부' };
+            document.getElementById('modalTitle').textContent = titles[type] || '공유하기';
+
+            document.getElementById('mediaContent').innerHTML = `
+                <button class="media-btn" style="width:100%; margin:12px 0;" onclick="captureMedia('${type}')">
+                    ${type === 'photo' ? '카메라로 촬영' : '파일 선택'}
+                </button>
+                <div id="previewArea" style="text-align:center;"></div>
+            `;
+            document.getElementById('mediaModal').classList.add('active');
+            currentMedia = { type };
+        }
+
+        function captureMedia(type) {
+            const input = document.createElement('input');
+            input.type = 'file';
+            if (type === 'photo') {
+                input.accept = 'image/*';
+                input.capture = 'camera';
+            }
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const url = URL.createObjectURL(file);
+                document.getElementById('previewArea').innerHTML = `
+                    <img src="${url}" class="preview" alt="미리보기">
+                    <p>${file.name}</p>
+                `;
+                currentMedia.file = file;
+                currentMedia.previewUrl = url;
+            };
+            input.click();
+        }
+
+        // 카카오톡 공유
+        function shareToKakao() {
+            if (!currentMedia?.file) return alert("파일을 먼저 선택해주세요.");
+
+            const text = `차량: ${document.getElementById('carNum').value || document.getElementById('carNumSelect').value}\n` +
+                         `업무: ${document.getElementById('taskText').textContent}\n` +
+                         `시간: ${new Date().toLocaleString('ko-KR')}`;
+
+            Kakao.Link.sendDefault({
+                objectType: 'feed',
+                content: {
+                    title: currentMedia.type === 'photo' ? '사진 공유' : '파일 공유',
+                    description: text,
+                    imageUrl: currentMedia.previewUrl,
+                    link: { mobileWebUrl: window.location.href }
+                },
+                buttons: [{ title: '자세히 보기', link: { mobileWebUrl: window.location.href } }]
+            }).then(() => {
+                alert("카카오톡으로 공유 완료!");
+                closeModal();
+            }).catch(err => alert("카카오톡 공유 실패: " + err));
+        }
+
+        // 시스템 공유 (Web Share API)
+        function shareWithSystem() {
+            if (!currentMedia?.file) return alert("파일을 먼저 선택해주세요.");
+
+            const text = `차량: ${document.getElementById('carNum').value || document.getElementById('carNumSelect').value}\n` +
+                         `업무: ${document.getElementById('taskText').textContent}\n` +
+                         `시간: ${new Date().toLocaleString('ko-KR')}`;
+
+            if (navigator.share) {
+                navigator.share({
+                    title: currentMedia.type === 'photo' ? '사진 공유' : '파일 공유',
+                    text: text,
+                    files: [currentMedia.file]
+                }).then(() => {
+                    alert("공유 완료!");
+                    closeModal();
+                }).catch(() => alert("공유 취소 또는 실패"));
+            } else {
+                alert("이 브라우저에서는 시스템 공유가 지원되지 않습니다.\n카카오톡 버튼을 이용해주세요.");
+            }
+        }
+
+        function closeModal() {
+            document.getElementById('mediaModal').classList.remove('active');
+            currentMedia = null;
+            document.getElementById('previewArea').innerHTML = '';
+        }
+
+        // ... (toggleTracking, togglePiP, vibratePhone 등 이전 함수들 유지 - 필요 시 말씀해주세요)
+    </script>
+</body>
+</html>
