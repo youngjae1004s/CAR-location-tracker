@@ -81,10 +81,10 @@
   <div class="status" style="background:#ecf0f1;color:#7f8c8d">대기 중...</div>
 </div>
 
-<!-- 모달 등은 생략 (기존과 동일) -->
+<!-- 모달 생략 (기존과 동일) -->
 
 <script>
-const config={
+const config = {
   apiKey: "AIzaSyBMcqlyHzCO0k6G-6Fzb7AHso2A3gGAbq8",
   authDomain: "car-location-tracker-438f0.firebaseapp.com",
   databaseURL: "https://car-location-tracker-438f0-default-rtdb.firebaseio.com",
@@ -93,32 +93,56 @@ const config={
   messagingSenderId: "645185980587",
   appId: "1:645185980587:web:f2b54d5df01cb14d300fee"
 };
+
 firebase.initializeApp(config);
-const db=firebase.database(),auth=firebase.auth();
+const db = firebase.database();
+const auth = firebase.auth();
 
-Kakao.init('YOUR_KAKAO_JAVASCRIPT_KEY_HERE'); // ← 키 입력 필수!
+Kakao.init('YOUR_KAKAO_JAVASCRIPT_KEY_HERE');
 
-let uid,watchId,tracking=!1,lastDelivery=0,media=null;
-const carNums=JSON.parse(localStorage.getItem('carNums')||'[]').slice(0,10).reverse();
+let uid, watchId, tracking = false, lastDelivery = 0, media = null;
+const carNums = JSON.parse(localStorage.getItem('carNums') || '[]').slice(0, 10).reverse();
 
-window.addEventListener('load',()=>{const s=document.getElementById('carNumSelect');carNums.forEach(n=>{const o=document.createElement('option');o.value=o.textContent=n;s.appendChild(o)});});
+window.addEventListener('load', () => {
+  const s = document.getElementById('carNumSelect');
+  carNums.forEach(n => {
+    const o = document.createElement('option');
+    o.value = o.textContent = n;
+    s.appendChild(o);
+  });
+});
 
-function handleCarSelect(v){
-  const i=document.getElementById('carNum');
-  if(v===""){
-    i.style.display='block';
-    i.value='';
-    i.focus();
-    setTimeout(()=>{i.focus(); i.click(); i.dispatchEvent(new Event('focus'));}, 300); // 3중 강제 포커스
-  }else{
-    i.style.display='none';
-    i.value=v;
+function handleCarSelect(v) {
+  const i = document.getElementById('carNum');
+  if (v === "") {
+    i.style.display = 'block';
+    i.value = '';
+    setTimeout(() => {
+      i.focus();
+      i.click();
+      i.dispatchEvent(new Event('focus', { bubbles: true }));
+      i.dispatchEvent(new Event('click', { bubbles: true }));
+    }, 300);
+  } else {
+    i.style.display = 'none';
+    i.value = v;
   }
 }
 
-auth.signInAnonymously().then(c=>{uid=c.user.uid;db.ref('users/'+uid).on('value',s=>document.getElementById('taskText').textContent=s.val()?.task||'전체');}).catch(e=>alert("인증오류: "+e.message));
+auth.signInAnonymously()
+  .then(c => {
+    uid = c.user.uid;
+    console.log("익명 로그인 성공:", uid);
+    db.ref('users/' + uid).on('value', s => {
+      document.getElementById('taskText').textContent = s.val()?.task || '전체';
+    });
+  })
+  .catch(e => {
+    console.error("인증 오류:", e);
+    alert("인증 오류: " + e.message + "\n새로고침 후 다시 시도해주세요.");
+  });
 
-// 나머지 함수들 (toggleTracking, togglePiP, openMediaModal 등)은 이전 버전 그대로 사용 가능
+// 나머지 함수들 (toggleTracking, togglePiP, openMediaModal 등)은 이전 버전 그대로
 // 필요하면 전체 붙여드릴게요!
 </script>
 </body>
