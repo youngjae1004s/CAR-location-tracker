@@ -17,7 +17,6 @@
 <body>
   <h1>관리자 페이지</h1>
 
-  <!-- 비밀번호 입력 (최초 1회) -->
   <div id="loginBox">
     <input type="password" id="adminPass" placeholder="관리자 비밀번호 입력" style="padding:12px; width:300px;">
     <button onclick="checkPassword()">로그인</button>
@@ -35,50 +34,49 @@
 
   <script>
     const config = {
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
+      apiKey: "AIzaSyBMcqlyHzCO0k6G-6Fzb7AHso2A3gGAbq8",
+      authDomain: "car-location-tracker-438f0.firebaseapp.com",
+      databaseURL: "https://car-location-tracker-438f0-default-rtdb.firebaseio.com",
+      projectId: "car-location-tracker-438f0",
+      storageBucket: "car-location-tracker-438f0.appspot.com",
+      messagingSenderId: "645185980587",
+      appId: "1:645185980587:web:f2b54d5df01cb14d300fee",
+      measurementId: "G-B0BG1K096R"
+    };
 
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyBMcqlyHzCO0k6G-6Fzb7AHso2A3gGAbq8",
-  authDomain: "car-location-tracker-438f0.firebaseapp.com",
-  projectId: "car-location-tracker-438f0",
-  storageBucket: "car-location-tracker-438f0.firebasestorage.app",
-  messagingSenderId: "645185980587",
-  appId: "1:645185980587:web:f2b54d5df01cb14d300fee",
-  measurementId: "G-B0BG1K096R"
-};
+    try {
+      firebase.initializeApp(config);
+      console.log("Firebase 초기화 성공!");
+    } catch (e) {
+      console.error("Firebase 초기화 실패:", e);
+      alert("Firebase 연결 오류: " + e.message);
+    }
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-};
-    firebase.initializeApp(config);
     const db = firebase.database();
-
-    const ADMIN_PASSWORD = "123"; // ← 여기 비밀번호 변경하세요!
+    const ADMIN_PASSWORD = "123"; // ← 여기 변경하세요!
 
     function checkPassword() {
       const pass = document.getElementById('adminPass').value;
+      console.log("입력된 비밀번호:", pass);
       if (pass === ADMIN_PASSWORD) {
+        console.log("로그인 성공! 목록 로드 시작");
         document.getElementById('loginBox').style.display = 'none';
         document.getElementById('adminContent').style.display = 'block';
         loadUsers();
       } else {
+        console.log("비밀번호 틀림");
         alert("비밀번호 틀렸습니다.");
       }
     }
 
     function loadUsers() {
+      console.log("DB에서 users 읽기 시도");
       db.ref('users').on('value', snap => {
+        console.log("users 데이터:", snap.val());
         const tbody = document.querySelector('#userTable tbody');
         tbody.innerHTML = '';
         snap.forEach(child => {
-          const data = child.val();
+          const data = child.val() || {};
           const tr = document.createElement('tr');
           tr.innerHTML = `
             <td>${child.key}</td>
@@ -97,21 +95,22 @@ const analytics = getAnalytics(app);
           `;
           tbody.appendChild(tr);
         });
+      }, err => {
+        console.error("DB 오류:", err);
+        alert("데이터 읽기 실패: " + err.message);
       });
     }
 
     function updateTask(uid, newTask) {
-      db.ref('users/' + uid).update({ task: newTask });
-      alert("업무가 변경되었습니다.");
+      db.ref('users/' + uid).update({ task: newTask }).then(() => alert("변경 완료!")).catch(e => alert("변경 실패: " + e.message));
     }
 
     function sendTestDelivery(uid) {
       db.ref('adminDeliveries/' + uid).set({
         photoUrl: "https://picsum.photos/400/300",
-        memo: "관리자 테스트 전달입니다!\n오늘도 안전운전하세요.",
+        memo: "테스트 전달!",
         timestamp: Date.now()
-      });
-      alert("테스트 사진/메모 전송 완료!");
+      }).then(() => alert("전송 완료!")).catch(e => alert("전송 실패: " + e.message));
     }
   </script>
 </body>
