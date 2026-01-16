@@ -4,6 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>관리자 페이지</title>
+  <!-- Leaflet CSS & JS (API 키 필요 없음) -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
   <style>
@@ -11,7 +15,11 @@
     table { width:100%; border-collapse:collapse; margin-top:20px; }
     th, td { border:1px solid #ddd; padding:12px; text-align:left; }
     th { background:#2c3e50; color:white; }
-    select, button { padding:8px; border-radius:6px; }
+    select, button { padding:8px; border-radius:6px; cursor:pointer; }
+    #mapModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index:1000; }
+    #mapContainer { width:90%; max-width:800px; height:80vh; background:#fff; border-radius:12px; overflow:hidden; position:relative; }
+    #closeMap { position:absolute; top:15px; right:15px; padding:10px 16px; background:#e74c3c; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; z-index:10; }
+    #map { width:100%; height:100%; }
   </style>
 </head>
 <body>
@@ -26,10 +34,24 @@
     <h2>사용자 목록</h2>
     <table id="userTable">
       <thead>
-        <tr><th>UID</th><th>차량번호</th><th>업무</th><th>마지막 위치 시간</th><th>변경</th></tr>
+        <tr>
+          <th>UID</th>
+          <th>차량번호</th>
+          <th>업무</th>
+          <th>마지막 위치 시간</th>
+          <th>지도 보기</th>
+        </tr>
       </thead>
       <tbody></tbody>
     </table>
+  </div>
+
+  <!-- 지도 모달 -->
+  <div id="mapModal">
+    <div id="mapContainer">
+      <button id="closeMap" onclick="document.getElementById('mapModal').style.display='none'">닫기</button>
+      <div id="map"></div>
+    </div>
   </div>
 
   <script>
@@ -40,39 +62,29 @@
       projectId: "car-location-tracker-438f0",
       storageBucket: "car-location-tracker-438f0.appspot.com",
       messagingSenderId: "645185980587",
-      appId: "1:645185980587:web:f2b54d5df01cb14d300fee",
-      measurementId: "G-B0BG1K096R"
+      appId: "1:645185980587:web:f2b54d5df01cb14d300fee"
     };
 
-    try {
-      firebase.initializeApp(config);
-      console.log("Firebase 초기화 성공!");
-    } catch (e) {
-      console.error("Firebase 초기화 실패:", e);
-      alert("Firebase 연결 오류: " + e.message);
-    }
-
+    firebase.initializeApp(config);
     const db = firebase.database();
+
     const ADMIN_PASSWORD = "123"; // ← 여기 변경하세요!
 
     function checkPassword() {
       const pass = document.getElementById('adminPass').value;
-      console.log("입력된 비밀번호:", pass);
       if (pass === ADMIN_PASSWORD) {
-        console.log("로그인 성공! 목록 로드 시작");
         document.getElementById('loginBox').style.display = 'none';
         document.getElementById('adminContent').style.display = 'block';
         loadUsers();
       } else {
-        console.log("비밀번호 틀림");
         alert("비밀번호 틀렸습니다.");
       }
     }
 
+    let map; // 지도 인스턴스
+
     function loadUsers() {
-      console.log("DB에서 users 읽기 시도");
-      db.ref('users').on('value', snap => {
-        console.log("users 데이터:", snap.val());
+      db.ref('locations').on('value', snap => {
         const tbody = document.querySelector('#userTable tbody');
         tbody.innerHTML = '';
         snap.forEach(child => {
@@ -81,36 +93,37 @@
           tr.innerHTML = `
             <td>${child.key}</td>
             <td>${data.carNum || '-'}</td>
-            <td>
-              <select onchange="updateTask('${child.key}', this.value)">
-                <option value="전체" ${data.task==='전체'?'selected':''}>전체</option>
-                <option value="1" ${data.task==='1'?'selected':''}>1</option>
-                <option value="2" ${data.task==='2'?'selected':''}>2</option>
-                <option value="3" ${data.task==='3'?'selected':''}>3</option>
-                <option value="4" ${data.task==='4'?'selected':''}>4</option>
-              </select>
-            </td>
+            <td>${data.task || '-'}</td>
             <td>${data.timestamp ? new Date(data.timestamp).toLocaleString('ko-KR') : '-'}</td>
-            <td><button onclick="sendTestDelivery('${child.key}')">테스트 전달</button></td>
+            <td>
+              ${data.lat && data.lng 
+                ? `<button onclick="showMap(${data.lat}, ${data.lng}, '${data.carNum || '차량'}')">지도 보기</button>`
+                : '위치 없음'}
+            </td>
           `;
           tbody.appendChild(tr);
         });
-      }, err => {
-        console.error("DB 오류:", err);
-        alert("데이터 읽기 실패: " + err.message);
       });
     }
 
-    function updateTask(uid, newTask) {
-      db.ref('users/' + uid).update({ task: newTask }).then(() => alert("변경 완료!")).catch(e => alert("변경 실패: " + e.message));
-    }
+    function showMap(lat, lng, title) {
+      const modal = document.getElementById('mapModal');
+      modal.style.display = 'flex';
 
-    function sendTestDelivery(uid) {
-      db.ref('adminDeliveries/' + uid).set({
-        photoUrl: "https://picsum.photos/400/300",
-        memo: "테스트 전달!",
-        timestamp: Date.now()
-      }).then(() => alert("전송 완료!")).catch(e => alert("전송 실패: " + e.message));
+      if (!map) {
+        map = L.map('map').setView([lat, lng], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(map);
+      } else {
+        map.setView([lat, lng], 15);
+      }
+
+      // 기존 마커 제거 후 새 마커 추가
+      if (map.currentMarker) map.currentMarker.remove();
+      map.currentMarker = L.marker([lat, lng]).addTo(map)
+        .bindPopup(`<b>${title}</b><br>위도: ${lat}<br>경도: ${lng}`)
+        .openPopup();
     }
   </script>
 </body>
