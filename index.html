@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>차량 위치 전송</title>
-  <link rel="manifest" href="manifest.json?v=2">
+  <link rel="manifest" href="manifest.json?v=3">
   <meta name="theme-color" content="#27ae60">
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -53,7 +53,7 @@
   <select id="carNumSelect" onchange="handleCarSelect(this.value)">
     <option value="">새 차량번호 입력...</option>
   </select>
-  <input type="text" id="carNum" placeholder="새 차량번호 입력 (예: 12가3456)" autocomplete="off" style="display:none">
+  <input type="text" id="carNum" placeholder="새 차량번호 입력 (예: 12가3456)" autocomplete="off" inputmode="text" style="display:none">
 
   <label>업무</label>
   <div class="status" style="background:#f8f9fa;color:#2c3e50"><strong id="taskText">로딩 중...</strong></div>
@@ -81,37 +81,22 @@
   <div class="status" style="background:#ecf0f1;color:#7f8c8d">대기 중...</div>
 </div>
 
-<!-- 모달 등은 생략 (이전과 동일) -->
+<!-- 모달 등은 생략 (기존과 동일) -->
 
 <script>
 const config={
-
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
   apiKey: "AIzaSyBMcqlyHzCO0k6G-6Fzb7AHso2A3gGAbq8",
   authDomain: "car-location-tracker-438f0.firebaseapp.com",
+  databaseURL: "https://car-location-tracker-438f0-default-rtdb.firebaseio.com",
   projectId: "car-location-tracker-438f0",
-  storageBucket: "car-location-tracker-438f0.firebasestorage.app",
+  storageBucket: "car-location-tracker-438f0.appspot.com",
   messagingSenderId: "645185980587",
-  appId: "1:645185980587:web:f2b54d5df01cb14d300fee",
-  measurementId: "G-B0BG1K096R"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
+  appId: "1:645185980587:web:f2b54d5df01cb14d300fee"
 };
 firebase.initializeApp(config);
 const db=firebase.database(),auth=firebase.auth();
 
-Kakao.init('YOUR_KAKAO_JAVASCRIPT_KEY_HERE');
+Kakao.init('YOUR_KAKAO_JAVASCRIPT_KEY_HERE'); // ← 키 입력 필수!
 
 let uid,watchId,tracking=!1,lastDelivery=0,media=null;
 const carNums=JSON.parse(localStorage.getItem('carNums')||'[]').slice(0,10).reverse();
@@ -123,18 +108,18 @@ function handleCarSelect(v){
   if(v===""){
     i.style.display='block';
     i.value='';
-    i.focus();           // 포커스 강제
-    setTimeout(()=>i.click(),100); // 모바일 키보드 강제
+    i.focus();
+    setTimeout(()=>{i.focus(); i.click(); i.dispatchEvent(new Event('focus'));}, 300); // 3중 강제 포커스
   }else{
     i.style.display='none';
     i.value=v;
   }
 }
 
-auth.signInAnonymously().then(c=>{uid=c.user.uid;db.ref('users/'+uid).on('value',s=>document.getElementById('taskText').textContent=s.val()?.task||'전체');/* 나머지 리스너 생략 */}).catch(e=>alert("인증오류: "+e.message));
+auth.signInAnonymously().then(c=>{uid=c.user.uid;db.ref('users/'+uid).on('value',s=>document.getElementById('taskText').textContent=s.val()?.task||'전체');}).catch(e=>alert("인증오류: "+e.message));
 
-// toggleTracking, PiP, 공유 등 나머지 함수는 이전과 동일 (길이 줄이기 위해 생략)
-// 필요하시면 말씀 주세요!
+// 나머지 함수들 (toggleTracking, togglePiP, openMediaModal 등)은 이전 버전 그대로 사용 가능
+// 필요하면 전체 붙여드릴게요!
 </script>
 </body>
 </html>
