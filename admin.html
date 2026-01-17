@@ -16,6 +16,7 @@
   
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
   
   <style>
@@ -27,7 +28,6 @@
       height: 100vh;
     }
     
-    /* 전체 화면 지도 */
     #mainMap {
       position: fixed;
       top: 0;
@@ -37,12 +37,11 @@
       z-index: 1;
     }
     
-    /* 왼쪽 사이드바 */
     .sidebar {
       position: fixed;
       top: 20px;
       left: 20px;
-      width: 380px;
+      width: 400px;
       max-height: calc(100vh - 40px);
       background: rgba(255, 255, 255, 0.98);
       backdrop-filter: blur(10px);
@@ -191,7 +190,6 @@
       margin-bottom: 12px;
     }
     
-    /* 컨트롤 버튼들 */
     .controls {
       position: fixed;
       top: 20px;
@@ -221,15 +219,10 @@
       box-shadow: 0 6px 20px rgba(0,0,0,0.2);
     }
     
-    .control-btn:active {
-      transform: scale(0.95);
-    }
-    
-    /* 토글 버튼 */
     .toggle-sidebar {
       position: fixed;
       top: 50%;
-      left: 420px;
+      left: 440px;
       transform: translateY(-50%);
       width: 32px;
       height: 64px;
@@ -244,7 +237,7 @@
     }
     
     .sidebar.collapsed {
-      transform: translateX(-420px);
+      transform: translateX(-440px);
     }
     
     .sidebar.collapsed + .toggle-sidebar {
@@ -252,7 +245,6 @@
       border-radius: 12px;
     }
     
-    /* Leaflet 팝업 커스텀 */
     .custom-popup {
       text-align: center;
       padding: 8px;
@@ -275,25 +267,33 @@
       color: #374151;
     }
     
-    /* 로딩 오버레이 */
-    .loading-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.7);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 9999;
-      color: white;
-      font-size: 20px;
-      font-weight: 600;
+    .debug-panel {
+      padding: 16px;
+      background: #f3f4f6;
+      border-top: 1px solid #e5e7eb;
+      font-size: 11px;
+      color: #6b7280;
+      max-height: 150px;
+      overflow-y: auto;
+      flex-shrink: 0;
     }
     
-    .loading-overlay.hidden {
-      display: none;
+    .debug-panel .log-item {
+      margin: 4px 0;
+      padding: 4px 0;
+      border-bottom: 1px solid #e5e7eb;
     }
     
-    /* 모바일 대응 */
+    .debug-panel .success {
+      color: #10b981;
+      font-weight: bold;
+    }
+    
+    .debug-panel .error {
+      color: #ef4444;
+      font-weight: bold;
+    }
+    
     @media (max-width: 768px) {
       .sidebar {
         width: calc(100% - 40px);
@@ -307,17 +307,11 @@
       .controls {
         bottom: 20px;
         top: auto;
-        right: 20px;
       }
     }
   </style>
 </head>
 <body>
-
-<!-- 로딩 화면 -->
-<div class="loading-overlay" id="loadingOverlay">
-  🔄 지도 로딩 중...
-</div>
 
 <!-- 전체 화면 지도 -->
 <div id="mainMap"></div>
@@ -347,12 +341,19 @@
   <div class="vehicle-list" id="vehicleList">
     <div class="empty-state">
       <div class="icon">🔍</div>
-      <div>차량 정보 로딩 중...</div>
+      <div>로그인 중...</div>
+    </div>
+  </div>
+  
+  <div class="debug-panel" id="debugPanel">
+    <strong>📊 연결 상태</strong>
+    <div id="debugLog">
+      <div class="log-item">시스템 시작...</div>
     </div>
   </div>
 </div>
 
-<!-- 사이드바 토글 버튼 -->
+<!-- 사이드바 토글 -->
 <button class="toggle-sidebar" id="toggleSidebar" onclick="toggleSidebar()">
   ◀
 </button>
@@ -380,22 +381,70 @@ const firebaseConfig = {
 };
 
 firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
 const db = firebase.database();
 
 let map = null;
 let markers = {};
 let vehicleData = [];
+let isAuthenticated = false;
+
+// Debug logging
+function addDebugLog(message, type = 'info') {
+  const debugLog = document.getElementById('debugLog');
+  const time = new Date().toLocaleTimeString('ko-KR');
+  const logItem = document.createElement('div');
+  logItem.className = `log-item ${type}`;
+  logItem.innerHTML = `<strong>${time}</strong>: ${message}`;
+  debugLog.appendChild(logItem);
+  
+  if (debugLog.children.length > 8) {
+    debugLog.removeChild(debugLog.firstChild);
+  }
+  
+  console.log(`[${time}] ${message}`);
+}
 
 // 초기화
 window.addEventListener('load', () => {
+  addDebugLog('시스템 초기화 시작');
   initMap();
-  loadVehicleData();
+  initAuth();
 });
+
+// Firebase 인증 (익명 로그인)
+function initAuth() {
+  addDebugLog('Firebase 익명 인증 시작...');
+  
+  auth.signInAnonymously()
+    .then(credential => {
+      isAuthenticated = true;
+      addDebugLog(`✅ 관리자 인증 성공 (UID: ${credential.user.uid.substring(0, 8)}...)`, 'success');
+      
+      // 인증 후 데이터 로드
+      loadVehicleData();
+      checkFirebaseConnection();
+    })
+    .catch(error => {
+      addDebugLog(`❌ 인증 실패: ${error.message}`, 'error');
+      console.error('인증 오류:', error);
+    });
+}
+
+// Firebase 연결 상태 확인
+function checkFirebaseConnection() {
+  db.ref('.info/connected').on('value', snapshot => {
+    if (snapshot.val() === true) {
+      addDebugLog('✅ Firebase 실시간 연결됨', 'success');
+    } else {
+      addDebugLog('⚠️ Firebase 연결 끊김', 'error');
+    }
+  });
+}
 
 // 지도 초기화
 function initMap() {
   try {
-    // 대한민국 중심 (서울)
     map = L.map('mainMap').setView([37.5665, 126.9780], 7);
     
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -403,33 +452,46 @@ function initMap() {
       maxZoom: 19
     }).addTo(map);
     
-    // 로딩 화면 제거
-    setTimeout(() => {
-      document.getElementById('loadingOverlay').classList.add('hidden');
-    }, 500);
-    
-    console.log('✅ 지도 초기화 완료');
+    addDebugLog('✅ 지도 초기화 완료', 'success');
   } catch (error) {
-    console.error('❌ 지도 초기화 실패:', error);
-    alert('지도를 로드할 수 없습니다: ' + error.message);
+    addDebugLog('❌ 지도 초기화 실패: ' + error.message, 'error');
+    console.error('지도 오류:', error);
   }
 }
 
 // Firebase에서 차량 데이터 로드
 function loadVehicleData() {
-  console.log('🔄 Firebase 데이터 로딩 시작...');
+  if (!isAuthenticated) {
+    addDebugLog('⚠️ 인증 대기 중...', 'error');
+    return;
+  }
   
+  addDebugLog('Firebase 데이터 리스너 등록...');
+  
+  // locations 경로 실시간 감시
   db.ref('locations').on('value', snapshot => {
+    addDebugLog('📡 Firebase 데이터 수신됨');
+    
     vehicleData = [];
     const now = Date.now();
+    let dataCount = 0;
+    
+    if (!snapshot.exists()) {
+      addDebugLog('⚠️ locations 데이터 없음', 'error');
+      updateEmptyState();
+      return;
+    }
     
     snapshot.forEach(child => {
       const uid = child.key;
-      const data = child.val() || {};
+      const data = child.val();
+      dataCount++;
       
-      if (data.lat && data.lng) {
+      addDebugLog(`📦 UID ${uid.substring(0, 8)}: ${data.carNum || '미등록'}`);
+      
+      if (data && data.lat && data.lng) {
         const lastUpdate = data.timestamp || 0;
-        const isActive = (now - lastUpdate) < 300000; // 5분 이내
+        const isActive = (now - lastUpdate) < 300000; // 5분
         
         vehicleData.push({
           uid: uid,
@@ -441,17 +503,38 @@ function loadVehicleData() {
           timestamp: data.timestamp,
           isActive: isActive
         });
+        
+        addDebugLog(`✓ 차량 추가: ${data.carNum} (${data.lat.toFixed(4)}, ${data.lng.toFixed(4)})`, 'success');
+      } else {
+        addDebugLog(`⚠️ UID ${uid.substring(0, 8)}: 위치 데이터 없음`, 'error');
       }
     });
+    
+    addDebugLog(`📊 총 ${dataCount}개 항목, ${vehicleData.length}개 유효 차량`, 'success');
     
     updateStats();
     updateVehicleList();
     updateMapMarkers();
-    
-    console.log(`✅ ${vehicleData.length}개 차량 로드 완료`);
   }, error => {
-    console.error('❌ Firebase 오류:', error);
+    addDebugLog('❌ Firebase 오류: ' + error.message, 'error');
+    console.error('Firebase 오류:', error);
   });
+}
+
+// 빈 상태 표시
+function updateEmptyState() {
+  const listContainer = document.getElementById('vehicleList');
+  listContainer.innerHTML = `
+    <div class="empty-state">
+      <div class="icon">📭</div>
+      <div>등록된 차량이 없습니다</div>
+      <div style="font-size: 12px; margin-top: 8px;">
+        앱에서 위치 전송을 시작하세요
+      </div>
+    </div>
+  `;
+  
+  updateStats();
 }
 
 // 통계 업데이트
@@ -470,12 +553,7 @@ function updateVehicleList() {
   const listContainer = document.getElementById('vehicleList');
   
   if (vehicleData.length === 0) {
-    listContainer.innerHTML = `
-      <div class="empty-state">
-        <div class="icon">📭</div>
-        <div>등록된 차량이 없습니다</div>
-      </div>
-    `;
+    updateEmptyState();
     return;
   }
   
@@ -497,10 +575,13 @@ function updateVehicleList() {
         <strong>업무:</strong> ${vehicle.task}
       </div>
       <div class="vehicle-info">
+        <strong>위치:</strong> ${vehicle.lat.toFixed(6)}, ${vehicle.lng.toFixed(6)}
+      </div>
+      <div class="vehicle-info">
         <strong>정확도:</strong> ${vehicle.accuracy ? Math.round(vehicle.accuracy) + 'm' : '-'}
       </div>
       <div class="vehicle-info">
-        <strong>시간:</strong> ${new Date(vehicle.timestamp).toLocaleTimeString('ko-KR')}
+        <strong>시간:</strong> ${new Date(vehicle.timestamp).toLocaleString('ko-KR')}
       </div>
     `;
     
@@ -516,17 +597,20 @@ function updateMapMarkers() {
   Object.values(markers).forEach(marker => marker.remove());
   markers = {};
   
+  if (vehicleData.length === 0) {
+    addDebugLog('⚠️ 표시할 차량 없음');
+    return;
+  }
+  
   // 새 마커 추가
   vehicleData.forEach(vehicle => {
-    const iconHtml = vehicle.isActive 
-      ? '🟢' 
-      : '🔴';
+    const iconHtml = vehicle.isActive ? '🟢' : '🔴';
     
     const customIcon = L.divIcon({
-      html: `<div style="font-size: 24px;">${iconHtml}</div>`,
+      html: `<div style="font-size: 28px;">${iconHtml}</div>`,
       className: 'custom-marker',
-      iconSize: [30, 30],
-      iconAnchor: [15, 15]
+      iconSize: [32, 32],
+      iconAnchor: [16, 16]
     });
     
     const marker = L.marker([vehicle.lat, vehicle.lng], { icon: customIcon })
@@ -543,6 +627,8 @@ function updateMapMarkers() {
     
     markers[vehicle.uid] = marker;
   });
+  
+  addDebugLog(`✅ ${vehicleData.length}개 마커 표시 완료`, 'success');
 }
 
 // 특정 차량에 포커스
@@ -552,25 +638,28 @@ function focusVehicle(vehicle) {
   map.setView([vehicle.lat, vehicle.lng], 16);
   markers[vehicle.uid].openPopup();
   
-  console.log(`📍 ${vehicle.carNum} 위치로 이동`);
+  addDebugLog(`📍 ${vehicle.carNum} 위치로 이동`);
 }
 
 // 모든 마커가 보이도록 조정
 function fitAllMarkers() {
-  if (!map || vehicleData.length === 0) return;
+  if (!map || vehicleData.length === 0) {
+    addDebugLog('⚠️ 표시할 차량 없음');
+    return;
+  }
   
   const bounds = L.latLngBounds(
     vehicleData.map(v => [v.lat, v.lng])
   );
   
   map.fitBounds(bounds, { padding: [50, 50] });
-  console.log('🎯 전체 차량 보기');
+  addDebugLog('🎯 전체 차량 보기');
 }
 
 // 데이터 새로고침
 function refreshData() {
-  console.log('🔄 수동 새로고침');
-  loadVehicleData();
+  addDebugLog('🔄 수동 새로고침');
+  location.reload();
 }
 
 // 사이드바 토글
@@ -581,7 +670,6 @@ function toggleSidebar() {
   sidebar.classList.toggle('collapsed');
   toggleBtn.textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀';
   
-  // 지도 크기 재조정
   setTimeout(() => {
     if (map) map.invalidateSize();
   }, 300);
