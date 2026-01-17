@@ -3,90 +3,386 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>차량 위치 전송</title>
-  <link rel="manifest" href="manifest.json?v=3">
-  <meta name="theme-color" content="#27ae60">
-  <!-- Firebase SDK 로드 순서: app → auth → database -->
+  <title>차량 위치 추적</title>
+  <meta name="theme-color" content="#10b981">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;800&display=swap" rel="stylesheet">
+  
+  <!-- Firebase SDK -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
-  <script src="https://developers.kakao.com/sdk/js/kakao.min.js"></script>
+  
   <style>
-    body{margin:0;font-family:'Malgun Gothic',sans-serif;background:#f5f7fa;min-height:100vh;display:flex;justify-content:center;align-items:center}
-    .card{width:92%;max-width:420px;background:#fff;border-radius:24px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.08)}
-    h2{text-align:center;margin-bottom:24px;color:#2c3e50}
-    label{display:block;margin-bottom:6px;font-weight:700;font-size:15px}
-    select,input[type=text]{width:100%;padding:14px;margin-bottom:20px;border:1px solid #ddd;border-radius:12px;font-size:16px;box-sizing:border-box}
-    input:focus{outline:2px solid #3498db}
-    .tracking-container{position:relative;margin:24px 0 32px}
-    #toggleBtn{width:100%;height:160px;border:none;border-radius:28px;font-size:24px;font-weight:700;color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;box-shadow:0 8px 25px rgba(0,0,0,.15);transition:all .2s}
-    #toggleBtn.start{background:linear-gradient(135deg,#27ae60,#2ecc71)}
-    #toggleBtn.stop{background:linear-gradient(135deg,#e74c3c,#c0392b)}
-    #toggleBtn .icon{font-size:60px}
-    #pipBtn{position:absolute;bottom:10px;right:10px;width:50px;height:50px;background:rgba(255,255,255,.8);border-radius:50%;border:2px solid #3498db;font-size:24px;color:#3498db;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,0,0,.2);opacity:.7;transition:all .2s}
-    #pipBtn:hover{opacity:1;transform:scale(1.1)}
-    .media-group{display:flex;justify-content:space-between;gap:10px;margin-bottom:28px}
-    .media-btn{flex:1;padding:16px 8px;border:none;border-radius:16px;font-size:14px;font-weight:700;color:#fff;cursor:pointer}
-    .photo{background:#3498db}
-    .voice{background:#9b59b6}
-    .file{background:#f39c12}
-    .status{padding:14px;border-radius:12px;text-align:center;font-weight:700;margin:12px 0}
-    #trackingStatus{display:none;background:#e74c3c;color:#fff}
-    #adminDeliveryArea{margin-top:32px;padding:16px;background:#f1f8ff;border-radius:16px;border:1px solid #d1e8ff}
-    #adminDeliveryArea h4{margin:0 0 12px;color:#2c3e50;font-size:17px}
-    #adminPhotoImg{max-width:100%;border-radius:12px;box-shadow:0 4px 15px rgba(0,0,0,.1);display:none}
-    #adminMemo{margin-top:12px;white-space:pre-wrap;color:#34495e;font-size:15px;line-height:1.5}
-    #adminTime{font-size:13px;color:#7f8c8d;margin-top:8px;text-align:right}
-    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);justify-content:center;align-items:flex-end;z-index:1000}
-    .modal.active{display:flex}
-    .sheet{width:100%;max-width:420px;background:#fff;border-radius:20px 20px 0 0;padding:24px;max-height:80vh;overflow-y:auto}
-    .preview{max-width:100%;max-height:220px;border-radius:12px;margin:12px 0;display:block}
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px;
+    }
+    
+    .container {
+      width: 100%;
+      max-width: 480px;
+      background: white;
+      border-radius: 32px;
+      padding: 32px 24px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      animation: slideIn 0.4s ease-out;
+    }
+    
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    h1 {
+      text-align: center;
+      font-size: 28px;
+      font-weight: 800;
+      color: #1f2937;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    
+    .subtitle {
+      text-align: center;
+      color: #6b7280;
+      font-size: 14px;
+      margin-bottom: 32px;
+    }
+    
+    .input-group {
+      margin-bottom: 24px;
+    }
+    
+    label {
+      display: block;
+      font-weight: 600;
+      font-size: 15px;
+      color: #374151;
+      margin-bottom: 8px;
+    }
+    
+    select, input[type="text"] {
+      width: 100%;
+      padding: 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 16px;
+      font-size: 16px;
+      font-family: 'Noto Sans KR', sans-serif;
+      transition: all 0.2s;
+      background: white;
+    }
+    
+    select:focus, input[type="text"]:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
+    }
+    
+    .task-display {
+      padding: 16px;
+      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+      border-radius: 16px;
+      text-align: center;
+      font-weight: 600;
+      color: #374151;
+      font-size: 16px;
+    }
+    
+    .tracking-zone {
+      margin: 32px 0;
+      position: relative;
+    }
+    
+    #toggleBtn {
+      width: 100%;
+      height: 180px;
+      border: none;
+      border-radius: 28px;
+      font-size: 22px;
+      font-weight: 800;
+      color: white;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      transition: all 0.3s;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    #toggleBtn::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: inherit;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    #toggleBtn:active::before {
+      opacity: 0.3;
+    }
+    
+    #toggleBtn.inactive {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      box-shadow: 0 10px 40px rgba(16, 185, 129, 0.4);
+    }
+    
+    #toggleBtn.active {
+      background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+      box-shadow: 0 10px 40px rgba(239, 68, 68, 0.4);
+      animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.02); }
+    }
+    
+    .icon {
+      font-size: 64px;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+    }
+    
+    .status-badge {
+      display: none;
+      padding: 12px 20px;
+      background: #fee2e2;
+      color: #991b1b;
+      border-radius: 12px;
+      text-align: center;
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 20px;
+      animation: fadeIn 0.3s;
+    }
+    
+    .status-badge.active {
+      display: block;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .photo-section {
+      margin-top: 32px;
+    }
+    
+    .photo-btn {
+      width: 100%;
+      padding: 18px;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border: none;
+      border-radius: 16px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      transition: all 0.2s;
+    }
+    
+    .photo-btn:active {
+      transform: scale(0.98);
+    }
+    
+    .admin-notice {
+      margin-top: 32px;
+      padding: 20px;
+      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+      border-radius: 16px;
+      border: 2px solid #fbbf24;
+    }
+    
+    .admin-notice h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: #92400e;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .admin-content {
+      color: #78350f;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    
+    .footer {
+      margin-top: 24px;
+      text-align: center;
+      color: #9ca3af;
+      font-size: 13px;
+    }
+    
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.7);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+      animation: fadeIn 0.2s;
+    }
+    
+    .modal.active {
+      display: flex;
+    }
+    
+    .modal-content {
+      background: white;
+      border-radius: 24px;
+      padding: 28px;
+      width: 90%;
+      max-width: 400px;
+      max-height: 80vh;
+      overflow-y: auto;
+    }
+    
+    .modal h2 {
+      margin-bottom: 20px;
+      color: #1f2937;
+      font-size: 20px;
+    }
+    
+    .modal input[type="file"] {
+      width: 100%;
+      padding: 12px;
+      border: 2px dashed #d1d5db;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .modal textarea {
+      width: 100%;
+      min-height: 100px;
+      padding: 12px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-family: 'Noto Sans KR', sans-serif;
+      font-size: 14px;
+      margin-bottom: 16px;
+      resize: vertical;
+    }
+    
+    .modal-buttons {
+      display: flex;
+      gap: 12px;
+    }
+    
+    .modal-buttons button {
+      flex: 1;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 15px;
+    }
+    
+    .btn-submit {
+      background: #10b981;
+      color: white;
+    }
+    
+    .btn-cancel {
+      background: #e5e7eb;
+      color: #374151;
+    }
+    
+    .preview-img {
+      max-width: 100%;
+      border-radius: 12px;
+      margin: 12px 0;
+    }
   </style>
 </head>
 <body>
 
-<div class="card">
-  <h2>🚗 차량 위치 전송</h2>
-
-  <div id="trackingStatus" class="status">📍 위치 전송 중... (탭 닫으면 중단됨)</div>
-
-  <label>차량번호</label>
-  <select id="carNumSelect" onchange="handleCarSelect(this.value)">
-    <option value="">새 차량번호 입력...</option>
-  </select>
-  <input type="text" id="carNum" placeholder="새 차량번호 입력 (예: 12가3456)" autocomplete="off" inputmode="text" style="display:none">
-
-  <label>업무</label>
-  <div class="status" style="background:#f8f9fa;color:#2c3e50"><strong id="taskText">로딩 중...</strong></div>
-
-  <div class="tracking-container">
-    <button id="toggleBtn" class="start" onclick="toggleTracking()">
-      <span class="icon">📍</span> 위치 전송 시작
+<div class="container">
+  <h1>🚗 차량 위치 추적</h1>
+  <div class="subtitle">실시간 위치 공유 시스템</div>
+  
+  <div class="status-badge" id="statusBadge">
+    ⚠️ 위치 전송 중 - 앱을 종료하면 전송이 중단됩니다
+  </div>
+  
+  <div class="input-group">
+    <label>📋 차량번호</label>
+    <select id="carNumSelect" onchange="handleCarSelect(this.value)">
+      <option value="">새 차량번호 입력...</option>
+    </select>
+    <input type="text" id="carNum" placeholder="예: 12가3456" style="display:none; margin-top:12px;">
+  </div>
+  
+  <div class="input-group">
+    <label>📌 현재 업무</label>
+    <div class="task-display" id="taskText">로딩 중...</div>
+  </div>
+  
+  <div class="tracking-zone">
+    <button id="toggleBtn" class="inactive" onclick="toggleTracking()">
+      <span class="icon">📍</span>
+      <span id="btnText">위치 전송 시작</span>
     </button>
-    <button id="pipBtn" onclick="togglePiP()" title="작은 화면">🪟</button>
   </div>
-
-  <div class="media-group">
-    <button class="media-btn photo" onclick="openMediaModal('photo')">📸 사진</button>
-    <button class="media-btn voice" onclick="alert('준비중')">🎤 음성</button>
-    <button class="media-btn file" onclick="openMediaModal('file')">📎 파일</button>
+  
+  <div class="photo-section">
+    <button class="photo-btn" onclick="openPhotoModal()">
+      📸 사진 전송
+    </button>
   </div>
-
-  <div id="adminDeliveryArea">
-    <h4>📢 관리자 전달사항</h4>
-    <img id="adminPhotoImg" src="" alt="">
-    <div id="adminMemo"></div>
-    <div id="adminTime"></div>
+  
+  <div class="admin-notice">
+    <h3>📢 관리자 메시지</h3>
+    <div class="admin-content" id="adminMemo">메시지가 없습니다.</div>
   </div>
-
-  <div class="status" style="background:#ecf0f1;color:#7f8c8d">대기 중...</div>
+  
+  <div class="footer">
+    실시간 GPS 위치 추적 시스템 v2.0
+  </div>
 </div>
 
-<!-- 모달 생략 (기존과 동일) -->
+<!-- Photo Modal -->
+<div class="modal" id="photoModal">
+  <div class="modal-content">
+    <h2>📸 사진 전송</h2>
+    <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="previewPhoto()">
+    <img id="photoPreview" class="preview-img" style="display:none;">
+    <textarea id="photoMemo" placeholder="메모 입력 (선택사항)"></textarea>
+    <div class="modal-buttons">
+      <button class="btn-cancel" onclick="closePhotoModal()">취소</button>
+      <button class="btn-submit" onclick="uploadPhoto()">전송</button>
+    </div>
+  </div>
+</div>
 
 <script>
-// 완전한 config (authDomain 필수 포함)
-const config = {
+// Firebase Configuration
+const firebaseConfig = {
   apiKey: "AIzaSyBMcqlyHzCO0k6G-6Fzb7AHso2A3gGAbq8",
   authDomain: "car-location-tracker-438f0.firebaseapp.com",
   databaseURL: "https://car-location-tracker-438f0-default-rtdb.firebaseio.com",
@@ -96,59 +392,225 @@ const config = {
   appId: "1:645185980587:web:f2b54d5df01cb14d300fee"
 };
 
-firebase.initializeApp(config);
+firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
 
-Kakao.init('YOUR_KAKAO_JAVASCRIPT_KEY_HERE');
-
-let uid, watchId, tracking = false, lastDelivery = 0, media = null;
+// Global Variables
+let uid = null;
+let watchId = null;
+let isTracking = false;
 const carNums = JSON.parse(localStorage.getItem('carNums') || '[]').slice(0, 10).reverse();
 
+// Initialize
 window.addEventListener('load', () => {
-  const s = document.getElementById('carNumSelect');
-  carNums.forEach(n => {
-    const o = document.createElement('option');
-    o.value = o.textContent = n;
-    s.appendChild(o);
-  });
+  loadCarNumbers();
+  initAuth();
 });
 
-function handleCarSelect(v) {
-  const i = document.getElementById('carNum');
-  if (v === "") {
-    i.style.display = 'block';
-    i.value = '';
-    // 모바일 키보드 강제 4중 포커스
-    setTimeout(() => {
-      i.focus();
-      i.click();
-      i.dispatchEvent(new Event('focus', { bubbles: true }));
-      i.dispatchEvent(new Event('click', { bubbles: true }));
-      i.dispatchEvent(new Event('input', { bubbles: true }));
-    }, 300);
+function loadCarNumbers() {
+  const select = document.getElementById('carNumSelect');
+  carNums.forEach(num => {
+    const option = document.createElement('option');
+    option.value = option.textContent = num;
+    select.appendChild(option);
+  });
+}
+
+function handleCarSelect(value) {
+  const input = document.getElementById('carNum');
+  if (value === "") {
+    input.style.display = 'block';
+    input.value = '';
+    setTimeout(() => input.focus(), 100);
   } else {
-    i.style.display = 'none';
-    i.value = v;
+    input.style.display = 'none';
+    input.value = value;
   }
 }
 
-// 인증 부분 강화 (에러 시 입력창은 동작하도록)
-auth.signInAnonymously()
-  .then(c => {
-    uid = c.user.uid;
-    console.log("익명 로그인 성공:", uid);
-    db.ref('users/' + uid).on('value', s => {
-      document.getElementById('taskText').textContent = s.val()?.task || '전체';
+// Firebase Authentication
+function initAuth() {
+  auth.signInAnonymously()
+    .then(credential => {
+      uid = credential.user.uid;
+      console.log("✅ 익명 로그인 성공:", uid);
+      
+      // Listen for task updates
+      db.ref('users/' + uid).on('value', snapshot => {
+        const data = snapshot.val();
+        document.getElementById('taskText').textContent = data?.task || '업무 미지정';
+      });
+      
+      // Listen for admin messages
+      db.ref('admin/messages/' + uid).on('value', snapshot => {
+        const data = snapshot.val();
+        document.getElementById('adminMemo').textContent = data?.message || '메시지가 없습니다.';
+      });
+    })
+    .catch(error => {
+      console.error("❌ 인증 오류:", error);
+      alert("인증 오류가 발생했습니다.\n페이지를 새로고침해주세요.\n\n" + error.message);
     });
-  })
-  .catch(e => {
-    console.error("인증 오류:", e);
-    alert("인증 오류: " + e.message + "\n페이지 새로고침 후 다시 시도해주세요.");
-  });
+}
 
-// 나머지 함수들 (toggleTracking, togglePiP, openMediaModal 등)은 이전 버전 그대로
-// 필요하면 전체 붙여드릴게요!
+// Location Tracking
+function toggleTracking() {
+  if (!uid) {
+    alert("로그인 중입니다. 잠시만 기다려주세요.");
+    return;
+  }
+  
+  const carNumInput = document.getElementById('carNum');
+  const carNum = carNumInput.value.trim();
+  
+  if (!carNum) {
+    alert("차량번호를 입력해주세요.");
+    carNumInput.focus();
+    return;
+  }
+  
+  if (!isTracking) {
+    startTracking(carNum);
+  } else {
+    stopTracking();
+  }
+}
+
+function startTracking(carNum) {
+  if (!navigator.geolocation) {
+    alert("이 브라우저는 위치 서비스를 지원하지 않습니다.");
+    return;
+  }
+  
+  // Save car number
+  const nums = [carNum, ...carNums.filter(n => n !== carNum)].slice(0, 10);
+  localStorage.setItem('carNums', JSON.stringify(nums));
+  
+  // Update UI
+  const btn = document.getElementById('toggleBtn');
+  const btnText = document.getElementById('btnText');
+  const badge = document.getElementById('statusBadge');
+  
+  btn.className = 'active';
+  btnText.textContent = '위치 전송 중지';
+  badge.classList.add('active');
+  isTracking = true;
+  
+  // Start watching position
+  watchId = navigator.geolocation.watchPosition(
+    position => {
+      const { latitude, longitude, accuracy } = position.coords;
+      
+      db.ref('locations/' + uid).set({
+        lat: latitude,
+        lng: longitude,
+        accuracy: accuracy,
+        carNum: carNum,
+        timestamp: Date.now()
+      }).then(() => {
+        console.log("📍 위치 전송 성공:", latitude, longitude);
+      }).catch(error => {
+        console.error("❌ 위치 전송 실패:", error);
+      });
+    },
+    error => {
+      console.error("❌ 위치 오류:", error);
+      alert("위치 정보를 가져올 수 없습니다.\n\n" + error.message);
+      stopTracking();
+    },
+    {
+      enableHighAccuracy: true,
+      maximumAge: 0,
+      timeout: 10000
+    }
+  );
+}
+
+function stopTracking() {
+  if (watchId) {
+    navigator.geolocation.clearWatch(watchId);
+    watchId = null;
+  }
+  
+  const btn = document.getElementById('toggleBtn');
+  const btnText = document.getElementById('btnText');
+  const badge = document.getElementById('statusBadge');
+  
+  btn.className = 'inactive';
+  btnText.textContent = '위치 전송 시작';
+  badge.classList.remove('active');
+  isTracking = false;
+}
+
+// Photo Modal
+function openPhotoModal() {
+  document.getElementById('photoModal').classList.add('active');
+}
+
+function closePhotoModal() {
+  document.getElementById('photoModal').classList.remove('active');
+  document.getElementById('photoInput').value = '';
+  document.getElementById('photoPreview').style.display = 'none';
+  document.getElementById('photoMemo').value = '';
+}
+
+function previewPhoto() {
+  const file = document.getElementById('photoInput').files[0];
+  const preview = document.getElementById('photoPreview');
+  
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = e => {
+      preview.src = e.target.result;
+      preview.style.display = 'block';
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function uploadPhoto() {
+  if (!uid) {
+    alert("로그인 중입니다. 잠시만 기다려주세요.");
+    return;
+  }
+  
+  const file = document.getElementById('photoInput').files[0];
+  const memo = document.getElementById('photoMemo').value.trim();
+  
+  if (!file) {
+    alert("사진을 선택해주세요.");
+    return;
+  }
+  
+  const reader = new FileReader();
+  reader.onload = e => {
+    const photoData = {
+      image: e.target.result,
+      memo: memo,
+      timestamp: Date.now()
+    };
+    
+    db.ref('photos/' + uid).push(photoData)
+      .then(() => {
+        alert("✅ 사진이 전송되었습니다!");
+        closePhotoModal();
+      })
+      .catch(error => {
+        alert("❌ 전송 실패: " + error.message);
+      });
+  };
+  reader.readAsDataURL(file);
+}
+
+// Prevent accidental exit when tracking
+window.addEventListener('beforeunload', e => {
+  if (isTracking) {
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
 </script>
+
 </body>
 </html>

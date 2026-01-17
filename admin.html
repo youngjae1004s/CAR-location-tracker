@@ -3,59 +3,347 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>관리자 페이지</title>
-  <!-- Leaflet CSS & JS (API 키 필요 없음) -->
+  <title>관리자 대시보드</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;800&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS & JS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
+  
   <style>
-    body { font-family: 'Malgun Gothic', sans-serif; margin:20px; background:#f5f7fa; }
-    table { width:100%; border-collapse:collapse; margin-top:20px; }
-    th, td { border:1px solid #ddd; padding:12px; text-align:left; }
-    th { background:#2c3e50; color:white; }
-    select, button { padding:8px; border-radius:6px; cursor:pointer; }
-    #mapModal { display:none; position:fixed; inset:0; background:rgba(0,0,0,0.7); justify-content:center; align-items:center; z-index:1000; }
-    #mapContainer { width:90%; max-width:800px; height:80vh; background:#fff; border-radius:12px; overflow:hidden; position:relative; }
-    #closeMap { position:absolute; top:15px; right:15px; padding:10px 16px; background:#e74c3c; color:white; border:none; border-radius:8px; font-weight:bold; cursor:pointer; z-index:10; }
-    #map { width:100%; height:100%; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Noto Sans KR', sans-serif;
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .login-container {
+      max-width: 400px;
+      margin: 100px auto;
+      background: white;
+      border-radius: 24px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    
+    .login-container h1 {
+      font-size: 28px;
+      margin-bottom: 32px;
+      color: #1f2937;
+    }
+    
+    .login-container input {
+      width: 100%;
+      padding: 16px;
+      border: 2px solid #e5e7eb;
+      border-radius: 12px;
+      font-size: 16px;
+      margin-bottom: 16px;
+    }
+    
+    .login-container button {
+      width: 100%;
+      padding: 16px;
+      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    
+    .login-container button:active {
+      transform: scale(0.98);
+    }
+    
+    .dashboard {
+      display: none;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .header {
+      background: white;
+      border-radius: 24px;
+      padding: 24px 32px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .header h1 {
+      font-size: 28px;
+      color: #1f2937;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    
+    .logout-btn {
+      padding: 12px 24px;
+      background: #ef4444;
+      color: white;
+      border: none;
+      border-radius: 12px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    
+    .stat-card {
+      background: white;
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    
+    .stat-card h3 {
+      font-size: 14px;
+      color: #6b7280;
+      margin-bottom: 8px;
+    }
+    
+    .stat-card .value {
+      font-size: 32px;
+      font-weight: 800;
+      color: #1f2937;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    
+    .card h2 {
+      font-size: 22px;
+      color: #1f2937;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    th {
+      background: #f3f4f6;
+      padding: 16px 12px;
+      text-align: left;
+      font-weight: 700;
+      color: #374151;
+      font-size: 14px;
+      border-bottom: 2px solid #e5e7eb;
+    }
+    
+    td {
+      padding: 16px 12px;
+      border-bottom: 1px solid #e5e7eb;
+      color: #4b5563;
+      font-size: 14px;
+    }
+    
+    tbody tr:hover {
+      background: #f9fafb;
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .badge.online {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    
+    .badge.offline {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .btn-primary {
+      background: #3b82f6;
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      background: #2563eb;
+    }
+    
+    .btn-success {
+      background: #10b981;
+      color: white;
+    }
+    
+    .btn-danger {
+      background: #ef4444;
+      color: white;
+    }
+    
+    /* Map Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      justify-content: center;
+      align-items: center;
+      z-index: 1000;
+    }
+    
+    .modal.active {
+      display: flex;
+    }
+    
+    .map-container {
+      width: 95%;
+      max-width: 1000px;
+      height: 85vh;
+      background: white;
+      border-radius: 24px;
+      overflow: hidden;
+      position: relative;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    }
+    
+    .map-header {
+      padding: 20px;
+      background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .map-header h2 {
+      font-size: 20px;
+      color: white;
+      margin: 0;
+    }
+    
+    .close-btn {
+      padding: 10px 20px;
+      background: white;
+      color: #1e3a8a;
+      border: none;
+      border-radius: 10px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    
+    #map {
+      width: 100%;
+      height: calc(100% - 70px);
+    }
   </style>
 </head>
 <body>
-  <h1>관리자 페이지</h1>
 
-  <div id="loginBox">
-    <input type="password" id="adminPass" placeholder="관리자 비밀번호 입력" style="padding:12px; width:300px;">
-    <button onclick="checkPassword()">로그인</button>
+<!-- Login Screen -->
+<div class="login-container" id="loginBox">
+  <h1>🔐 관리자 로그인</h1>
+  <input type="password" id="adminPass" placeholder="비밀번호를 입력하세요">
+  <button onclick="checkPassword()">로그인</button>
+</div>
+
+<!-- Dashboard -->
+<div class="dashboard" id="dashboard">
+  <div class="header">
+    <h1>📊 관리자 대시보드</h1>
+    <button class="logout-btn" onclick="logout()">로그아웃</button>
   </div>
-
-  <div id="adminContent" style="display:none;">
-    <h2>사용자 목록</h2>
-    <table id="userTable">
-      <thead>
-        <tr>
-          <th>UID</th>
-          <th>차량번호</th>
-          <th>업무</th>
-          <th>마지막 위치 시간</th>
-          <th>지도 보기</th>
-        </tr>
-      </thead>
-      <tbody></tbody>
-    </table>
-  </div>
-
-  <!-- 지도 모달 -->
-  <div id="mapModal">
-    <div id="mapContainer">
-      <button id="closeMap" onclick="document.getElementById('mapModal').style.display='none'">닫기</button>
-      <div id="map"></div>
+  
+  <div class="stats">
+    <div class="stat-card">
+      <h3>전체 차량</h3>
+      <div class="value" id="totalVehicles">0</div>
+    </div>
+    <div class="stat-card">
+      <h3>활성 차량</h3>
+      <div class="value" id="activeVehicles">0</div>
+    </div>
+    <div class="stat-card">
+      <h3>비활성 차량</h3>
+      <div class="value" id="inactiveVehicles">0</div>
     </div>
   </div>
+  
+  <div class="card">
+    <h2>🚗 차량 위치 현황</h2>
+    <div style="overflow-x: auto;">
+      <table>
+        <thead>
+          <tr>
+            <th>상태</th>
+            <th>차량번호</th>
+            <th>업무</th>
+            <th>마지막 위치</th>
+            <th>정확도</th>
+            <th>동작</th>
+          </tr>
+        </thead>
+        <tbody id="vehicleTable">
+          <tr>
+            <td colspan="6" style="text-align:center; color:#9ca3af;">데이터 로딩 중...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
-  <script>
-const config = {
+<!-- Map Modal -->
+<div class="modal" id="mapModal">
+  <div class="map-container">
+    <div class="map-header">
+      <h2 id="mapTitle">🗺️ 차량 위치</h2>
+      <button class="close-btn" onclick="closeMap()">닫기</button>
+    </div>
+    <div id="map"></div>
+  </div>
+</div>
+
+<script>
+// Firebase Configuration
+const firebaseConfig = {
   apiKey: "AIzaSyBMcqlyHzCO0k6G-6Fzb7AHso2A3gGAbq8",
   authDomain: "car-location-tracker-438f0.firebaseapp.com",
   databaseURL: "https://car-location-tracker-438f0-default-rtdb.firebaseio.com",
@@ -65,66 +353,130 @@ const config = {
   appId: "1:645185980587:web:f2b54d5df01cb14d300fee"
 };
 
-    firebase.initializeApp(config);
-    const db = firebase.database();
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
 
-    const ADMIN_PASSWORD = "123"; // ← 여기 변경하세요!
+// Admin password - 변경하세요!
+const ADMIN_PASSWORD = "admin123";
 
-    function checkPassword() {
-      const pass = document.getElementById('adminPass').value;
-      if (pass === ADMIN_PASSWORD) {
-        document.getElementById('loginBox').style.display = 'none';
-        document.getElementById('adminContent').style.display = 'block';
-        loadUsers();
-      } else {
-        alert("비밀번호 틀렸습니다.");
-      }
+let map = null;
+let currentMarker = null;
+
+// Login
+function checkPassword() {
+  const password = document.getElementById('adminPass').value;
+  if (password === ADMIN_PASSWORD) {
+    document.getElementById('loginBox').style.display = 'none';
+    document.getElementById('dashboard').style.display = 'block';
+    loadVehicleData();
+  } else {
+    alert("❌ 비밀번호가 틀렸습니다.");
+  }
+}
+
+function logout() {
+  document.getElementById('loginBox').style.display = 'block';
+  document.getElementById('dashboard').style.display = 'none';
+  document.getElementById('adminPass').value = '';
+}
+
+// Load vehicle data
+function loadVehicleData() {
+  db.ref('locations').on('value', snapshot => {
+    const tbody = document.getElementById('vehicleTable');
+    tbody.innerHTML = '';
+    
+    let total = 0;
+    let active = 0;
+    let inactive = 0;
+    
+    snapshot.forEach(child => {
+      const uid = child.key;
+      const data = child.val() || {};
+      
+      total++;
+      
+      const now = Date.now();
+      const lastUpdate = data.timestamp || 0;
+      const isActive = (now - lastUpdate) < 300000; // 5분 이내
+      
+      if (isActive) active++;
+      else inactive++;
+      
+      const tr = document.createElement('tr');
+      tr.innerHTML = `
+        <td>
+          <span class="badge ${isActive ? 'online' : 'offline'}">
+            ${isActive ? '🟢 활성' : '🔴 비활성'}
+          </span>
+        </td>
+        <td><strong>${data.carNum || '-'}</strong></td>
+        <td>${data.task || '-'}</td>
+        <td>${lastUpdate ? new Date(lastUpdate).toLocaleString('ko-KR') : '-'}</td>
+        <td>${data.accuracy ? Math.round(data.accuracy) + 'm' : '-'}</td>
+        <td>
+          ${data.lat && data.lng 
+            ? `<button class="btn btn-primary" onclick="showMap(${data.lat}, ${data.lng}, '${data.carNum || '차량'}')">🗺️ 지도</button>`
+            : '<span style="color:#9ca3af;">위치 없음</span>'}
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+    
+    // Update stats
+    document.getElementById('totalVehicles').textContent = total;
+    document.getElementById('activeVehicles').textContent = active;
+    document.getElementById('inactiveVehicles').textContent = inactive;
+    
+    if (total === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; color:#9ca3af;">등록된 차량이 없습니다.</td></tr>';
     }
+  });
+}
 
-    let map; // 지도 인스턴스
+// Map functions
+function showMap(lat, lng, title) {
+  const modal = document.getElementById('mapModal');
+  modal.classList.add('active');
+  
+  document.getElementById('mapTitle').textContent = `🗺️ ${title} 위치`;
+  
+  if (!map) {
+    map = L.map('map').setView([lat, lng], 16);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+  } else {
+    map.setView([lat, lng], 16);
+  }
+  
+  // Remove existing marker
+  if (currentMarker) {
+    currentMarker.remove();
+  }
+  
+  // Add new marker
+  currentMarker = L.marker([lat, lng]).addTo(map)
+    .bindPopup(`
+      <strong>${title}</strong><br>
+      위도: ${lat.toFixed(6)}<br>
+      경도: ${lng.toFixed(6)}
+    `)
+    .openPopup();
+  
+  // Fix map rendering
+  setTimeout(() => map.invalidateSize(), 100);
+}
 
-    function loadUsers() {
-      db.ref('locations').on('value', snap => {
-        const tbody = document.querySelector('#userTable tbody');
-        tbody.innerHTML = '';
-        snap.forEach(child => {
-          const data = child.val() || {};
-          const tr = document.createElement('tr');
-          tr.innerHTML = `
-            <td>${child.key}</td>
-            <td>${data.carNum || '-'}</td>
-            <td>${data.task || '-'}</td>
-            <td>${data.timestamp ? new Date(data.timestamp).toLocaleString('ko-KR') : '-'}</td>
-            <td>
-              ${data.lat && data.lng 
-                ? `<button onclick="showMap(${data.lat}, ${data.lng}, '${data.carNum || '차량'}')">지도 보기</button>`
-                : '위치 없음'}
-            </td>
-          `;
-          tbody.appendChild(tr);
-        });
-      });
-    }
+function closeMap() {
+  document.getElementById('mapModal').classList.remove('active');
+}
 
-    function showMap(lat, lng, title) {
-      const modal = document.getElementById('mapModal');
-      modal.style.display = 'flex';
+// Close modal on Escape key
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeMap();
+});
+</script>
 
-      if (!map) {
-        map = L.map('map').setView([lat, lng], 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        }).addTo(map);
-      } else {
-        map.setView([lat, lng], 15);
-      }
-
-      // 기존 마커 제거 후 새 마커 추가
-      if (map.currentMarker) map.currentMarker.remove();
-      map.currentMarker = L.marker([lat, lng]).addTo(map)
-        .bindPopup(`<b>${title}</b><br>위도: ${lat}<br>경도: ${lng}`)
-        .openPopup();
-    }
-  </script>
 </body>
 </html>
