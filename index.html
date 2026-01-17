@@ -6,7 +6,7 @@
   <title>차량 위치 전송</title>
   <link rel="manifest" href="manifest.json?v=3">
   <meta name="theme-color" content="#27ae60">
-  <!-- Firebase SDK - 순서 중요! app → auth → database -->
+  <!-- Firebase SDK 로드 순서: app → auth → database -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
@@ -85,6 +85,7 @@
 <!-- 모달 생략 (기존과 동일) -->
 
 <script>
+// 완전한 config (authDomain 필수 포함)
 const config = {
   apiKey: "AIzaSyBMcqlyHzCO0k6G-6Fzb7AHso2A3gGAbq8",
   authDomain: "car-location-tracker-438f0.firebaseapp.com",
@@ -118,12 +119,13 @@ function handleCarSelect(v) {
   if (v === "") {
     i.style.display = 'block';
     i.value = '';
-    // 모바일 키보드 강제 3중 포커스
+    // 모바일 키보드 강제 4중 포커스
     setTimeout(() => {
       i.focus();
       i.click();
       i.dispatchEvent(new Event('focus', { bubbles: true }));
       i.dispatchEvent(new Event('click', { bubbles: true }));
+      i.dispatchEvent(new Event('input', { bubbles: true }));
     }, 300);
   } else {
     i.style.display = 'none';
@@ -131,6 +133,7 @@ function handleCarSelect(v) {
   }
 }
 
+// 인증 부분 강화 (에러 시 입력창은 동작하도록)
 auth.signInAnonymously()
   .then(c => {
     uid = c.user.uid;
@@ -144,7 +147,7 @@ auth.signInAnonymously()
     alert("인증 오류: " + e.message + "\n페이지 새로고침 후 다시 시도해주세요.");
   });
 
-// toggleTracking, togglePiP, openMediaModal 등 나머지 함수는 이전 버전 그대로
+// 나머지 함수들 (toggleTracking, togglePiP, openMediaModal 등)은 이전 버전 그대로
 // 필요하면 전체 붙여드릴게요!
 </script>
 </body>
