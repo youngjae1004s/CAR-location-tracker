@@ -3,58 +3,87 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>차량 위치 전송</title>
-  <style>
-    body { margin:0; font-family:'Malgun Gothic',sans-serif; background:#f5f7fa; display:flex; justify-content:center; align-items:center; min-height:100vh }
-    .card { width:92%; max-width:420px; background:#fff; border-radius:24px; padding:24px; box-shadow:0 12px 40px rgba(0,0,0,.08) }
-    h2 { text-align:center; margin-bottom:24px; color:#2c3e50 }
-    label { display:block; margin-bottom:6px; font-weight:700; font-size:15px }
-    input[type=text], input[type=file] { width:100%; padding:14px; margin-bottom:20px; border:1px solid #ddd; border-radius:12px; font-size:16px; box-sizing:border-box }
-    .status { padding:14px; border-radius:12px; text-align:center; font-weight:700; margin:12px 0 }
-    #trackingStatus { display:none; background:#e74c3c; color:#fff }
-    #toggleBtn { width:100%; padding:16px; border:none; border-radius:16px; font-size:18px; font-weight:700; color:#fff; cursor:pointer; background:linear-gradient(135deg,#27ae60,#2ecc71); margin-bottom:12px }
-    .media-btn { width:32%; padding:12px; border:none; border-radius:12px; font-size:14px; font-weight:700; color:#fff; cursor:pointer }
-    .photo { background:#3498db }
-    .file { background:#f39c12 }
-    .collapse { background:#bdc3c7; color:#2c3e50 }
-    .media-group { display:flex; justify-content:space-between; gap:10px; margin-bottom:20px }
-    #adminDelivery { background:#f1f8ff; padding:16px; border-radius:16px; border:1px solid #d1e8ff }
-    #adminDelivery img { max-width:100%; border-radius:12px; margin-top:12px }
-  </style>
+  <title>차량 위치 시스템</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-storage-compat.js"></script>
+  <style>
+    html, body { margin:0; padding:0; height:100%; font-family:'Malgun Gothic',sans-serif }
+    #map { height:100%; width:100%; position:absolute; top:0; left:0; z-index:0 }
+    .card {
+      position:fixed;
+      bottom:20px;
+      left:20px;
+      width:320px;
+      background:#fff;
+      border-radius:16px;
+      box-shadow:0 8px 24px rgba(0,0,0,.2);
+      padding:20px;
+      z-index:10;
+    }
+    .panel {
+      position:fixed;
+      top:20px;
+      right:20px;
+      width:300px;
+      background:#fff;
+      border-radius:16px;
+      box-shadow:0 8px 24px rgba(0,0,0,.2);
+      padding:16px;
+      z-index:10;
+      font-size:14px;
+    }
+    h2, h4 { margin-top:0; font-size:18px; color:#2c3e50 }
+    label { font-weight:700; display:block; margin-top:12px }
+    input[type="text"], textarea {
+      width:100%; padding:10px; border-radius:8px; border:1px solid #ccc; margin-bottom:10px
+    }
+    input[type="file"] { margin-bottom:10px }
+    button {
+      width:100%; padding:12px; font-weight:700; border:none; border-radius:8px;
+      background:#2ecc71; color:#fff; cursor:pointer; margin-bottom:10px
+    }
+    .status { background:#ecf0f1; padding:10px; border-radius:8px; margin-bottom:10px }
+    .media-group { display:flex; gap:8px; margin-bottom:10px }
+    .media-group button { flex:1 }
+    img { max-width:100%; border-radius:8px; margin-top:6px }
+    .clickable { cursor:pointer; margin-bottom:10px }
+  </style>
 </head>
 <body>
+  <div id="map"></div>
+
+  <!-- 접속자 카드 -->
   <div class="card">
     <h2>🚗 차량 위치 전송</h2>
-    <div id="trackingStatus" class="status">📍 위치 전송 중... (탭 닫으면 중단됨)</div>
-
+    <div id="trackingStatus" class="status" style="display:none">📍 위치 전송 중... (탭 닫으면 중단됨)</div>
     <label>차량번호</label>
     <input type="text" id="carNum" placeholder="예: 12가3456" />
-
     <label>업무</label>
-    <div class="status" style="background:#ecf0f1;color:#2c3e50"><strong id="taskText">로딩 중...</strong></div>
-
+    <div class="status"><strong id="taskText">로딩 중...</strong></div>
     <button id="toggleBtn">📍 위치 전송 시작</button>
-
     <div class="media-group">
       <input type="file" id="photoInput" accept="image/*" multiple hidden />
-      <button class="media-btn photo" onclick="document.getElementById('photoInput').click()">📸 사진</button>
-
+      <button onclick="document.getElementById('photoInput').click()">📸 사진</button>
       <input type="file" id="fileInput" multiple hidden />
-      <button class="media-btn file" onclick="document.getElementById('fileInput').click()">📎 파일</button>
-
-      <button class="media-btn collapse" onclick="document.querySelector('.card').style.display='none'">📥 접기</button>
+      <button onclick="document.getElementById('fileInput').click()">📎 파일</button>
     </div>
+  </div>
 
-    <div id="adminDelivery">
-      <strong>📢 관리자 전달사항</strong>
-      <div id="adminMemo"></div>
-      <img id="adminPhoto" src="" style="display:none" />
-      <div id="adminTime" style="font-size:13px;color:#7f8c8d;text-align:right"></div>
-    </div>
+  <!-- 관리자 패널 -->
+  <div class="panel">
+    <h2>📋 관리자 패널</h2>
+    <h4>접속자 위치</h4>
+    <div id="locationList" class="status">로딩 중...</div>
+    <h4>전송된 파일/사진</h4>
+    <div id="messageList" class="status">로딩 중...</div>
+    <h4>전달사항 전송</h4>
+    <textarea id="adminMemoInput" placeholder="전달할 메모를 입력하세요"></textarea>
+    <input type="file" id="adminPhotoInput" accept="image/*" />
+    <button id="sendMemoBtn">전달사항 전송</button>
   </div>
 
   <script>
@@ -72,26 +101,32 @@
     const db = firebase.database();
     const storage = firebase.storage();
 
+    const map = L.map('map').setView([36.5, 127.8], 7);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '© OpenStreetMap'
+    }).addTo(map);
+
+    const markers = {};
     let uid, watchId, tracking = false;
 
     auth.signInAnonymously().then(user => {
       uid = user.user.uid;
+
       db.ref('users/' + uid + '/task').on('value', snap => {
         document.getElementById('taskText').textContent = snap.val() || '전체';
       });
+
       db.ref('adminDelivery').on('value', snap => {
         const d = snap.val();
         if (!d) return;
-        document.getElementById('adminMemo').textContent = d.memo || '';
-        document.getElementById('adminTime').textContent = new Date(d.time).toLocaleString();
-        if (d.photoUrl) {
-          const img = document.getElementById('adminPhoto');
-          img.src = d.photoUrl;
-          img.style.display = 'block';
-        }
+        alert("📢 관리자 전달사항: " + d.memo);
       });
+
+      listenToLocations();
+      listenToMessages();
     });
 
+    // 위치 전송
     document.getElementById('toggleBtn').addEventListener('click', () => {
       const carNum = document.getElementById('carNum').value.trim();
       if (!carNum) return alert("차량번호를 입력해주세요.");
@@ -113,12 +148,14 @@
         }, err => {
           alert("위치 전송 실패: " + err.message);
         }, { enableHighAccuracy: true });
+
         tracking = true;
         document.getElementById('toggleBtn').textContent = '🛑 위치 전송 중지';
         document.getElementById('trackingStatus').style.display = 'block';
       }
     });
 
+    // 사진 업로드 → 텔레그램
     document.getElementById('photoInput').addEventListener('change', async e => {
       const files = Array.from(e.target.files);
       const urls = [];
@@ -136,21 +173,9 @@
       alert("사진 전송 완료!");
     });
 
+    // 파일 업로드 → 텔레그램
     document.getElementById('fileInput').addEventListener('change', async e => {
       const files = Array.from(e.target.files);
       for (const file of files) {
         const ref = storage.ref(`uploads/${uid}/files/${Date.now()}_${file.name}`);
         await ref.put(file);
-        const url = await ref.getDownloadURL();
-        db.ref(`messages/${uid}`).push({
-          type: 'file',
-          url,
-          name: file.name,
-          time: Date.now()
-        });
-      }
-      alert("파일 전송 완료!");
-    });
-  </script>
-</body>
-</html>
