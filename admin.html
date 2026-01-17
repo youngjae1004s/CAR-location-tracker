@@ -4,7 +4,67 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>관리자 페이지</title>
-  <link rel="stylesheet" href="style.css" />
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Malgun Gothic', sans-serif;
+      background: #f5f7fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .card {
+      width: 92%;
+      max-width: 480px;
+      background: #fff;
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+    }
+    h2, h4 {
+      text-align: center;
+      color: #2c3e50;
+    }
+    .section {
+      margin-top: 24px;
+    }
+    .status {
+      background: #ecf0f1;
+      padding: 12px;
+      border-radius: 12px;
+      font-size: 14px;
+      color: #2c3e50;
+      margin-bottom: 12px;
+    }
+    textarea {
+      width: 100%;
+      height: 80px;
+      border-radius: 12px;
+      padding: 10px;
+      font-size: 15px;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+    }
+    input[type="file"] {
+      margin-bottom: 12px;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      font-weight: 700;
+      border: none;
+      border-radius: 12px;
+      background: #2ecc71;
+      color: #fff;
+      cursor: pointer;
+    }
+    img {
+      max-width: 100%;
+      border-radius: 12px;
+      margin-top: 6px;
+    }
+  </style>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
@@ -14,19 +74,122 @@
   <div class="card">
     <h2>📋 관리자 패널</h2>
 
-    <h4>🚗 접속자 위치 목록</h4>
-    <div id="locationList" class="status" style="background:#ecf0f1; color:#2c3e50">로딩 중...</div>
+    <div class="section">
+      <h4>🚗 접속자 위치 목록</h4>
+      <div id="locationList" class="status">로딩 중...</div>
+    </div>
 
-    <h4>📎 전송된 파일/사진</h4>
-    <div id="messageList" class="status" style="background:#fefefe; color:#2c3e50; max-height:200px; overflow:auto"></div>
+    <div class="section">
+      <h4>📎 전송된 파일/사진</h4>
+      <div id="messageList" class="status" style="max-height:200px; overflow:auto">로딩 중...</div>
+    </div>
 
-    <h4>📢 전달사항 전송</h4>
-    <textarea id="adminMemoInput" placeholder="전달할 메모를 입력하세요" style="width:100%; height:80px; border-radius:12px; padding:10px; font-size:15px;"></textarea>
-    <input type="file" id="adminPhotoInput" accept="image/*" />
-    <button id="sendMemoBtn" style="margin-top:10px; width:100%; padding:12px; font-weight:700; border:none; border-radius:12px; background:#2ecc71; color:#fff; cursor:pointer">전달사항 전송</button>
+    <div class="section">
+      <h4>📢 전달사항 전송</h4>
+      <textarea id="adminMemoInput" placeholder="전달할 메모를 입력하세요"></textarea>
+      <input type="file" id="adminPhotoInput" accept="image/*" />
+      <button id="sendMemoBtn">전달사항 전송</button>
+    </div>
   </div>
 
-  <script src="script.js"></script>
-  <script src="admin.js"></script>
+  <script>
+    const config = {
+      apiKey: "AIzaSyBMcqlyHzCO0k6G-6Fzb7AHso2A3gGAbq8",
+      authDomain: "car-location-tracker-438f0.firebaseapp.com",
+      projectId: "car-location-tracker-438f0",
+      storageBucket: "car-location-tracker-438f0.firebasestorage.app",
+      messagingSenderId: "645185980587",
+      appId: "1:645185980587:web:f2b54d5df01cb14d300fee",
+      measurementId: "G-B0BG1K096R"
+    };
+    firebase.initializeApp(config);
+    const auth = firebase.auth();
+    const db = firebase.database();
+    const storage = firebase.storage();
+
+    auth.signInAnonymously().then(user => {
+      listenToLocations();
+      listenToMessages();
+    });
+
+    function listenToLocations() {
+      const ref = db.ref('locations');
+      ref.on('value', snapshot => {
+        const data = snapshot.val() || {};
+        const container = document.getElementById('locationList');
+        container.innerHTML = '';
+
+        Object.entries(data).forEach(([uid, loc]) => {
+          const div = document.createElement('div');
+          div.style.marginBottom = '12px';
+          div.innerHTML = `
+            <strong>${loc.carNum || '미등록 차량'}</strong><br/>
+            위도: ${loc.lat.toFixed(5)}, 경도: ${loc.lng.toFixed(5)}<br/>
+            시간: ${new Date(loc.time).toLocaleString()}
+          `;
+          container.appendChild(div);
+        });
+
+        if (Object.keys(data).length === 0) {
+          container.textContent = '위치 정보 없음';
+        }
+      });
+    }
+
+    function listenToMessages() {
+      const ref = db.ref('messages');
+      ref.on('value', snapshot => {
+        const data = snapshot.val() || {};
+        const container = document.getElementById('messageList');
+        container.innerHTML = '';
+
+        Object.entries(data).forEach(([uid, messages]) => {
+          Object.values(messages).forEach(msg => {
+            const div = document.createElement('div');
+            div.style.marginBottom = '12px';
+            if (msg.type === 'file') {
+              div.innerHTML = `
+                <strong>파일:</strong> <a href="${msg.url}" target="_blank">${msg.name}</a><br/>
+                시간: ${new Date(msg.time).toLocaleString()}
+              `;
+            } else if (msg.type === 'photo') {
+              div.innerHTML = `
+                <strong>사진:</strong><br/>
+                <img src="${msg.url}" /><br/>
+                시간: ${new Date(msg.time).toLocaleString()}
+              `;
+            }
+            container.appendChild(div);
+          });
+        });
+
+        if (Object.keys(data).length === 0) {
+          container.textContent = '전송된 메시지가 없습니다.';
+        }
+      });
+    }
+
+    document.getElementById('sendMemoBtn').addEventListener('click', async () => {
+      const memo = document.getElementById('adminMemoInput').value.trim();
+      const fileInput = document.getElementById('adminPhotoInput');
+      const file = fileInput.files[0];
+
+      let photoUrl = '';
+      if (file) {
+        const ref = storage.ref(`admin/photos/${Date.now()}_${file.name}`);
+        await ref.put(file);
+        photoUrl = await ref.getDownloadURL();
+      }
+
+      const data = {
+        memo,
+        photoUrl,
+        time: Date.now()
+      };
+
+      await db.ref('adminDelivery').set(data);
+      alert("전달사항이 전송되었습니다.");
+    });
+  </script>
 </body>
 </html>
