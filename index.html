@@ -90,6 +90,15 @@
       box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
     }
     
+    /* 차량번호 입력 강조 */
+    #carNum {
+      margin-top: 12px;
+      font-size: 18px;
+      font-weight: 600;
+      text-align: center;
+      letter-spacing: 1px;
+    }
+    
     .task-display {
       padding: 16px;
       background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
@@ -332,10 +341,10 @@
   
   <div class="input-group">
     <label>📋 차량번호</label>
-    <select id="carNumSelect" onchange="handleCarSelect(this.value)">
+    <select id="carNumSelect">
       <option value="">새 차량번호 입력...</option>
     </select>
-    <input type="text" id="carNum" placeholder="예: 12가3456" style="display:none; margin-top:12px;">
+    <input type="text" id="carNum" placeholder="예: 12가3456" inputmode="text">
   </div>
   
   <div class="input-group">
@@ -406,6 +415,7 @@ const carNums = JSON.parse(localStorage.getItem('carNums') || '[]').slice(0, 10)
 window.addEventListener('load', () => {
   loadCarNumbers();
   initAuth();
+  setupCarInput();
 });
 
 function loadCarNumbers() {
@@ -417,16 +427,32 @@ function loadCarNumbers() {
   });
 }
 
-function handleCarSelect(value) {
+// ✅ 차량번호 입력 로직 완전 수정
+function setupCarInput() {
+  const select = document.getElementById('carNumSelect');
   const input = document.getElementById('carNum');
-  if (value === "") {
-    input.style.display = 'block';
-    input.value = '';
-    setTimeout(() => input.focus(), 100);
-  } else {
-    input.style.display = 'none';
-    input.value = value;
-  }
+  
+  // 셀렉트 변경 시
+  select.addEventListener('change', function() {
+    if (this.value === "") {
+      // 새 차량번호 입력
+      input.style.display = 'block';
+      input.value = '';
+      input.focus();
+    } else {
+      // 기존 차량번호 선택
+      input.style.display = 'block';
+      input.value = this.value;
+    }
+  });
+  
+  // 입력창에 직접 입력
+  input.addEventListener('input', function() {
+    select.value = "";
+  });
+  
+  // 초기 상태: 입력창 보이기
+  input.style.display = 'block';
 }
 
 // Firebase Authentication
@@ -461,12 +487,11 @@ function toggleTracking() {
     return;
   }
   
-  const carNumInput = document.getElementById('carNum');
-  const carNum = carNumInput.value.trim();
+  const carNum = document.getElementById('carNum').value.trim();
   
   if (!carNum) {
     alert("차량번호를 입력해주세요.");
-    carNumInput.focus();
+    document.getElementById('carNum').focus();
     return;
   }
   
