@@ -4,15 +4,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>차량 위치 관리 시스템</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;800&display=swap" rel="stylesheet">
   
-  <!-- Leaflet CSS & JS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
-    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
   <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
@@ -21,306 +17,107 @@
   
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Noto Sans KR', sans-serif; overflow: hidden; height: 100vh; }
     
-    body {
-      font-family: 'Noto Sans KR', sans-serif;
-      overflow: hidden;
-      height: 100vh;
-    }
-    
-    #mainMap {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100vh;
-      z-index: 1;
-    }
+    #mainMap { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: 1; }
     
     .sidebar {
-      position: fixed;
-      top: 20px;
-      left: 20px;
-      width: 400px;
-      max-height: calc(100vh - 40px);
-      background: rgba(255, 255, 255, 0.98);
-      backdrop-filter: blur(10px);
-      border-radius: 24px;
-      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      z-index: 1000;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
+      position: fixed; top: 20px; left: 20px; width: 400px; max-height: calc(100vh - 40px);
+      background: rgba(255, 255, 255, 0.98); backdrop-filter: blur(10px);
+      border-radius: 24px; box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      z-index: 1000; display: flex; flex-direction: column; overflow: hidden;
     }
     
     .sidebar-header {
-      padding: 24px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      flex-shrink: 0;
+      padding: 24px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white; flex-shrink: 0;
     }
     
     .sidebar-header h1 {
-      font-size: 22px;
-      font-weight: 800;
-      margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-    
-    .sidebar-header .subtitle {
-      font-size: 13px;
-      opacity: 0.9;
+      font-size: 22px; font-weight: 800; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 10px;
     }
     
     .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 12px;
-      padding: 20px;
-      background: #f8f9fa;
-      border-bottom: 1px solid #e5e7eb;
-      flex-shrink: 0;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;
+      padding: 20px; background: #f8f9fa; border-bottom: 1px solid #e5e7eb;
     }
     
     .stat-box {
-      text-align: center;
-      padding: 12px 8px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      text-align: center; padding: 12px 8px; background: white;
+      border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
     
-    .stat-box .label {
-      font-size: 11px;
-      color: #6b7280;
-      margin-bottom: 6px;
-    }
+    .stat-box .label { font-size: 11px; color: #6b7280; margin-bottom: 6px; }
+    .stat-box .value { font-size: 24px; font-weight: 800; color: #1f2937; }
     
-    .stat-box .value {
-      font-size: 24px;
-      font-weight: 800;
-      color: #1f2937;
-    }
-    
-    .vehicle-list {
-      flex: 1;
-      overflow-y: auto;
-      padding: 16px;
-    }
-    
-    .vehicle-list::-webkit-scrollbar {
-      width: 6px;
-    }
-    
-    .vehicle-list::-webkit-scrollbar-thumb {
-      background: #cbd5e1;
-      border-radius: 3px;
-    }
+    .vehicle-list { flex: 1; overflow-y: auto; padding: 16px; }
+    .vehicle-list::-webkit-scrollbar { width: 6px; }
+    .vehicle-list::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
     
     .vehicle-item {
-      background: white;
-      border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 12px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-      cursor: pointer;
-      transition: all 0.2s;
-      border: 2px solid transparent;
+      background: white; border-radius: 16px; padding: 16px; margin-bottom: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08); cursor: pointer;
+      transition: all 0.2s; border: 2px solid transparent;
     }
     
     .vehicle-item:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+      transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.15);
       border-color: #667eea;
     }
     
     .vehicle-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;
     }
     
-    .vehicle-number {
-      font-size: 18px;
-      font-weight: 800;
-      color: #1f2937;
-    }
+    .vehicle-number { font-size: 18px; font-weight: 800; color: #1f2937; }
     
     .status-badge {
-      padding: 4px 12px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 4px;
+      padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 700;
     }
     
-    .status-badge.online {
-      background: #d1fae5;
-      color: #065f46;
-    }
+    .status-badge.online { background: #d1fae5; color: #065f46; }
+    .status-badge.offline { background: #fee2e2; color: #991b1b; }
     
-    .status-badge.offline {
-      background: #fee2e2;
-      color: #991b1b;
-    }
-    
-    .vehicle-info {
-      font-size: 13px;
-      color: #6b7280;
-      margin-bottom: 4px;
-    }
-    
-    .vehicle-info strong {
-      color: #374151;
-    }
+    .vehicle-info { font-size: 13px; color: #6b7280; margin-bottom: 4px; }
+    .vehicle-info strong { color: #374151; }
     
     .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: #9ca3af;
+      text-align: center; padding: 40px 20px; color: #9ca3af;
     }
     
-    .empty-state .icon {
-      font-size: 48px;
-      margin-bottom: 12px;
-    }
+    .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
     
     .controls {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      z-index: 1000;
-      display: flex;
-      gap: 12px;
+      position: fixed; top: 20px; right: 20px; z-index: 1000;
+      display: flex; gap: 12px;
     }
     
     .control-btn {
-      width: 48px;
-      height: 48px;
-      background: white;
-      border: none;
-      border-radius: 12px;
-      font-size: 20px;
-      cursor: pointer;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      width: 48px; height: 48px; background: white; border: none;
+      border-radius: 12px; font-size: 20px; cursor: pointer;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15); transition: all 0.2s;
     }
     
-    .control-btn:hover {
-      transform: scale(1.05);
-      box-shadow: 0 6px 20px rgba(0,0,0,0.2);
-    }
-    
-    .toggle-sidebar {
-      position: fixed;
-      top: 50%;
-      left: 440px;
-      transform: translateY(-50%);
-      width: 32px;
-      height: 64px;
-      background: rgba(255, 255, 255, 0.95);
-      border: none;
-      border-radius: 0 12px 12px 0;
-      font-size: 18px;
-      cursor: pointer;
-      box-shadow: 2px 0 12px rgba(0,0,0,0.1);
-      z-index: 999;
-      transition: all 0.3s;
-    }
-    
-    .sidebar.collapsed {
-      transform: translateX(-440px);
-    }
-    
-    .sidebar.collapsed + .toggle-sidebar {
-      left: 20px;
-      border-radius: 12px;
-    }
-    
-    .custom-popup {
-      text-align: center;
-      padding: 8px;
-    }
-    
-    .custom-popup .car-number {
-      font-size: 18px;
-      font-weight: 800;
-      color: #1f2937;
-      margin-bottom: 8px;
-    }
-    
-    .custom-popup .info-item {
-      font-size: 12px;
-      color: #6b7280;
-      margin: 4px 0;
-    }
-    
-    .custom-popup .info-item strong {
-      color: #374151;
-    }
+    .control-btn:hover { transform: scale(1.05); }
     
     .debug-panel {
-      padding: 16px;
-      background: #f3f4f6;
-      border-top: 1px solid #e5e7eb;
-      font-size: 11px;
-      color: #6b7280;
-      max-height: 150px;
-      overflow-y: auto;
-      flex-shrink: 0;
+      padding: 16px; background: #f3f4f6; border-top: 1px solid #e5e7eb;
+      font-size: 11px; color: #6b7280; max-height: 150px; overflow-y: auto;
     }
     
-    .debug-panel .log-item {
-      margin: 4px 0;
-      padding: 4px 0;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    
-    .debug-panel .success {
-      color: #10b981;
-      font-weight: bold;
-    }
-    
-    .debug-panel .error {
-      color: #ef4444;
-      font-weight: bold;
-    }
-    
-    @media (max-width: 768px) {
-      .sidebar {
-        width: calc(100% - 40px);
-        max-height: 50vh;
-      }
-      
-      .toggle-sidebar {
-        display: none;
-      }
-      
-      .controls {
-        bottom: 20px;
-        top: auto;
-      }
-    }
+    .success { color: #10b981; font-weight: bold; }
+    .error { color: #ef4444; font-weight: bold; }
   </style>
 </head>
 <body>
 
-<!-- 전체 화면 지도 -->
 <div id="mainMap"></div>
 
-<!-- 왼쪽 사이드바 -->
-<div class="sidebar" id="sidebar">
+<div class="sidebar">
   <div class="sidebar-header">
     <h1>🚗 차량 위치 관리</h1>
-    <div class="subtitle">실시간 모니터링 시스템</div>
+    <div style="font-size: 13px; opacity: 0.9;">실시간 모니터링 시스템</div>
   </div>
   
   <div class="stats-grid">
@@ -345,27 +142,15 @@
     </div>
   </div>
   
-  <div class="debug-panel" id="debugPanel">
+  <div class="debug-panel">
     <strong>📊 연결 상태</strong>
-    <div id="debugLog">
-      <div class="log-item">시스템 시작...</div>
-    </div>
+    <div id="debugLog">시스템 시작...</div>
   </div>
 </div>
 
-<!-- 사이드바 토글 -->
-<button class="toggle-sidebar" id="toggleSidebar" onclick="toggleSidebar()">
-  ◀
-</button>
-
-<!-- 컨트롤 버튼 -->
 <div class="controls">
-  <button class="control-btn" onclick="refreshData()" title="새로고침">
-    🔄
-  </button>
-  <button class="control-btn" onclick="fitAllMarkers()" title="전체 보기">
-    🎯
-  </button>
+  <button class="control-btn" onclick="location.reload()" title="새로고침">🔄</button>
+  <button class="control-btn" onclick="fitAllMarkers()" title="전체 보기">🎯</button>
 </div>
 
 <script>
@@ -387,114 +172,76 @@ const db = firebase.database();
 let map = null;
 let markers = {};
 let vehicleData = [];
-let isAuthenticated = false;
 
-// Debug logging
-function addDebugLog(message, type = 'info') {
-  const debugLog = document.getElementById('debugLog');
+// Debug
+function addLog(msg, type = 'info') {
+  const log = document.getElementById('debugLog');
   const time = new Date().toLocaleTimeString('ko-KR');
-  const logItem = document.createElement('div');
-  logItem.className = `log-item ${type}`;
-  logItem.innerHTML = `<strong>${time}</strong>: ${message}`;
-  debugLog.appendChild(logItem);
-  
-  if (debugLog.children.length > 8) {
-    debugLog.removeChild(debugLog.firstChild);
-  }
-  
-  console.log(`[${time}] ${message}`);
+  const div = document.createElement('div');
+  div.className = type;
+  div.innerHTML = `<strong>${time}</strong>: ${msg}`;
+  log.appendChild(div);
+  if (log.children.length > 8) log.removeChild(log.firstChild);
+  console.log(`[${time}] ${msg}`);
 }
 
-// 초기화
+// Init
 window.addEventListener('load', () => {
-  addDebugLog('시스템 초기화 시작');
   initMap();
   initAuth();
 });
 
-// Firebase 인증 (익명 로그인)
-function initAuth() {
-  addDebugLog('Firebase 익명 인증 시작...');
-  
-  auth.signInAnonymously()
-    .then(credential => {
-      isAuthenticated = true;
-      addDebugLog(`✅ 관리자 인증 성공 (UID: ${credential.user.uid.substring(0, 8)}...)`, 'success');
-      
-      // 인증 후 데이터 로드
-      loadVehicleData();
-      checkFirebaseConnection();
-    })
-    .catch(error => {
-      addDebugLog(`❌ 인증 실패: ${error.message}`, 'error');
-      console.error('인증 오류:', error);
-    });
-}
-
-// Firebase 연결 상태 확인
-function checkFirebaseConnection() {
-  db.ref('.info/connected').on('value', snapshot => {
-    if (snapshot.val() === true) {
-      addDebugLog('✅ Firebase 실시간 연결됨', 'success');
-    } else {
-      addDebugLog('⚠️ Firebase 연결 끊김', 'error');
-    }
-  });
-}
-
-// 지도 초기화
 function initMap() {
   try {
     map = L.map('mainMap').setView([37.5665, 126.9780], 7);
-    
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap contributors',
+      attribution: '© OpenStreetMap',
       maxZoom: 19
     }).addTo(map);
-    
-    addDebugLog('✅ 지도 초기화 완료', 'success');
-  } catch (error) {
-    addDebugLog('❌ 지도 초기화 실패: ' + error.message, 'error');
-    console.error('지도 오류:', error);
+    addLog('✅ 지도 초기화 완료', 'success');
+  } catch (e) {
+    addLog('❌ 지도 오류: ' + e.message, 'error');
   }
 }
 
-// Firebase에서 차량 데이터 로드
-function loadVehicleData() {
-  if (!isAuthenticated) {
-    addDebugLog('⚠️ 인증 대기 중...', 'error');
-    return;
-  }
+function initAuth() {
+  addLog('인증 시작...');
+  auth.signInAnonymously()
+    .then(cred => {
+      addLog(`✅ 인증 성공 (${cred.user.uid.substring(0,8)}...)`, 'success');
+      loadData();
+      
+      db.ref('.info/connected').on('value', snap => {
+        if (snap.val()) {
+          addLog('✅ Firebase 연결됨', 'success');
+        } else {
+          addLog('⚠️ Firebase 연결 끊김', 'error');
+        }
+      });
+    })
+    .catch(e => addLog('❌ 인증 실패: ' + e.message, 'error'));
+}
+
+function loadData() {
+  addLog('데이터 로딩 시작...');
   
-  addDebugLog('Firebase 데이터 리스너 등록...');
-  
-  // locations 경로 실시간 감시
-  db.ref('locations').on('value', snapshot => {
-    addDebugLog('📡 Firebase 데이터 수신됨');
-    
+  db.ref('locations').on('value', snap => {
+    addLog('📡 데이터 수신');
     vehicleData = [];
     const now = Date.now();
-    let dataCount = 0;
     
-    if (!snapshot.exists()) {
-      addDebugLog('⚠️ locations 데이터 없음', 'error');
-      updateEmptyState();
+    if (!snap.exists()) {
+      addLog('⚠️ 데이터 없음', 'error');
+      updateEmpty();
       return;
     }
     
-    snapshot.forEach(child => {
-      const uid = child.key;
+    snap.forEach(child => {
       const data = child.val();
-      dataCount++;
-      
-      addDebugLog(`📦 UID ${uid.substring(0, 8)}: ${data.carNum || '미등록'}`);
-      
       if (data && data.lat && data.lng) {
-        const lastUpdate = data.timestamp || 0;
-        const isActive = (now - lastUpdate) < 300000; // 5분
-        
+        const isActive = (now - data.timestamp) < 300000;
         vehicleData.push({
-          uid: uid,
+          uid: child.key,
           carNum: data.carNum || '미등록',
           task: data.task || '-',
           lat: data.lat,
@@ -503,176 +250,102 @@ function loadVehicleData() {
           timestamp: data.timestamp,
           isActive: isActive
         });
-        
-        addDebugLog(`✓ 차량 추가: ${data.carNum} (${data.lat.toFixed(4)}, ${data.lng.toFixed(4)})`, 'success');
-      } else {
-        addDebugLog(`⚠️ UID ${uid.substring(0, 8)}: 위치 데이터 없음`, 'error');
+        addLog(`✓ ${data.carNum}`, 'success');
       }
     });
     
-    addDebugLog(`📊 총 ${dataCount}개 항목, ${vehicleData.length}개 유효 차량`, 'success');
-    
+    addLog(`📊 ${vehicleData.length}개 차량 로드`, 'success');
     updateStats();
-    updateVehicleList();
-    updateMapMarkers();
-  }, error => {
-    addDebugLog('❌ Firebase 오류: ' + error.message, 'error');
-    console.error('Firebase 오류:', error);
-  });
+    updateList();
+    updateMarkers();
+  }, e => addLog('❌ 데이터 오류: ' + e.message, 'error'));
 }
 
-// 빈 상태 표시
-function updateEmptyState() {
-  const listContainer = document.getElementById('vehicleList');
-  listContainer.innerHTML = `
+function updateEmpty() {
+  document.getElementById('vehicleList').innerHTML = `
     <div class="empty-state">
       <div class="icon">📭</div>
       <div>등록된 차량이 없습니다</div>
-      <div style="font-size: 12px; margin-top: 8px;">
-        앱에서 위치 전송을 시작하세요
-      </div>
-    </div>
-  `;
-  
+    </div>`;
   updateStats();
 }
 
-// 통계 업데이트
 function updateStats() {
   const total = vehicleData.length;
   const active = vehicleData.filter(v => v.isActive).length;
-  const inactive = total - active;
-  
   document.getElementById('totalVehicles').textContent = total;
   document.getElementById('activeVehicles').textContent = active;
-  document.getElementById('inactiveVehicles').textContent = inactive;
+  document.getElementById('inactiveVehicles').textContent = total - active;
 }
 
-// 차량 목록 업데이트
-function updateVehicleList() {
-  const listContainer = document.getElementById('vehicleList');
-  
+function updateList() {
+  const list = document.getElementById('vehicleList');
   if (vehicleData.length === 0) {
-    updateEmptyState();
+    updateEmpty();
     return;
   }
   
-  listContainer.innerHTML = '';
-  
-  vehicleData.forEach(vehicle => {
+  list.innerHTML = '';
+  vehicleData.forEach(v => {
     const item = document.createElement('div');
     item.className = 'vehicle-item';
-    item.onclick = () => focusVehicle(vehicle);
-    
+    item.onclick = () => focusVehicle(v);
     item.innerHTML = `
       <div class="vehicle-header">
-        <div class="vehicle-number">${vehicle.carNum}</div>
-        <div class="status-badge ${vehicle.isActive ? 'online' : 'offline'}">
-          ${vehicle.isActive ? '🟢 활성' : '🔴 비활성'}
+        <div class="vehicle-number">${v.carNum}</div>
+        <div class="status-badge ${v.isActive ? 'online' : 'offline'}">
+          ${v.isActive ? '🟢 활성' : '🔴 비활성'}
         </div>
       </div>
-      <div class="vehicle-info">
-        <strong>업무:</strong> ${vehicle.task}
-      </div>
-      <div class="vehicle-info">
-        <strong>위치:</strong> ${vehicle.lat.toFixed(6)}, ${vehicle.lng.toFixed(6)}
-      </div>
-      <div class="vehicle-info">
-        <strong>정확도:</strong> ${vehicle.accuracy ? Math.round(vehicle.accuracy) + 'm' : '-'}
-      </div>
-      <div class="vehicle-info">
-        <strong>시간:</strong> ${new Date(vehicle.timestamp).toLocaleString('ko-KR')}
-      </div>
+      <div class="vehicle-info"><strong>업무:</strong> ${v.task}</div>
+      <div class="vehicle-info"><strong>위치:</strong> ${v.lat.toFixed(6)}, ${v.lng.toFixed(6)}</div>
+      <div class="vehicle-info"><strong>정확도:</strong> ${v.accuracy ? Math.round(v.accuracy) + 'm' : '-'}</div>
+      <div class="vehicle-info"><strong>시간:</strong> ${new Date(v.timestamp).toLocaleString('ko-KR')}</div>
     `;
-    
-    listContainer.appendChild(item);
+    list.appendChild(item);
   });
 }
 
-// 지도 마커 업데이트
-function updateMapMarkers() {
+function updateMarkers() {
   if (!map) return;
-  
-  // 기존 마커 제거
-  Object.values(markers).forEach(marker => marker.remove());
+  Object.values(markers).forEach(m => m.remove());
   markers = {};
   
-  if (vehicleData.length === 0) {
-    addDebugLog('⚠️ 표시할 차량 없음');
-    return;
-  }
-  
-  // 새 마커 추가
-  vehicleData.forEach(vehicle => {
-    const iconHtml = vehicle.isActive ? '🟢' : '🔴';
-    
-    const customIcon = L.divIcon({
-      html: `<div style="font-size: 28px;">${iconHtml}</div>`,
-      className: 'custom-marker',
+  vehicleData.forEach(v => {
+    const icon = L.divIcon({
+      html: `<div style="font-size: 28px;">${v.isActive ? '🟢' : '🔴'}</div>`,
       iconSize: [32, 32],
       iconAnchor: [16, 16]
     });
     
-    const marker = L.marker([vehicle.lat, vehicle.lng], { icon: customIcon })
-      .addTo(map);
-    
+    const marker = L.marker([v.lat, v.lng], { icon }).addTo(map);
     marker.bindPopup(`
-      <div class="custom-popup">
-        <div class="car-number">${vehicle.carNum}</div>
-        <div class="info-item"><strong>업무:</strong> ${vehicle.task}</div>
-        <div class="info-item"><strong>정확도:</strong> ${vehicle.accuracy ? Math.round(vehicle.accuracy) + 'm' : '-'}</div>
-        <div class="info-item"><strong>시간:</strong> ${new Date(vehicle.timestamp).toLocaleTimeString('ko-KR')}</div>
+      <div style="text-align:center; padding:8px;">
+        <strong style="font-size:18px;">${v.carNum}</strong><br>
+        <div style="margin-top:8px; font-size:12px; color:#666;">
+          업무: ${v.task}<br>
+          정확도: ${v.accuracy ? Math.round(v.accuracy) + 'm' : '-'}<br>
+          시간: ${new Date(v.timestamp).toLocaleTimeString('ko-KR')}
+        </div>
       </div>
     `);
-    
-    markers[vehicle.uid] = marker;
+    markers[v.uid] = marker;
   });
   
-  addDebugLog(`✅ ${vehicleData.length}개 마커 표시 완료`, 'success');
+  addLog(`✅ ${vehicleData.length}개 마커 표시`, 'success');
 }
 
-// 특정 차량에 포커스
-function focusVehicle(vehicle) {
-  if (!map || !markers[vehicle.uid]) return;
-  
-  map.setView([vehicle.lat, vehicle.lng], 16);
-  markers[vehicle.uid].openPopup();
-  
-  addDebugLog(`📍 ${vehicle.carNum} 위치로 이동`);
-}
-
-// 모든 마커가 보이도록 조정
-function fitAllMarkers() {
-  if (!map || vehicleData.length === 0) {
-    addDebugLog('⚠️ 표시할 차량 없음');
-    return;
+function focusVehicle(v) {
+  if (map && markers[v.uid]) {
+    map.setView([v.lat, v.lng], 16);
+    markers[v.uid].openPopup();
   }
-  
-  const bounds = L.latLngBounds(
-    vehicleData.map(v => [v.lat, v.lng])
-  );
-  
+}
+
+function fitAllMarkers() {
+  if (!map || vehicleData.length === 0) return;
+  const bounds = L.latLngBounds(vehicleData.map(v => [v.lat, v.lng]));
   map.fitBounds(bounds, { padding: [50, 50] });
-  addDebugLog('🎯 전체 차량 보기');
-}
-
-// 데이터 새로고침
-function refreshData() {
-  addDebugLog('🔄 수동 새로고침');
-  location.reload();
-}
-
-// 사이드바 토글
-function toggleSidebar() {
-  const sidebar = document.getElementById('sidebar');
-  const toggleBtn = document.getElementById('toggleSidebar');
-  
-  sidebar.classList.toggle('collapsed');
-  toggleBtn.textContent = sidebar.classList.contains('collapsed') ? '▶' : '◀';
-  
-  setTimeout(() => {
-    if (map) map.invalidateSize();
-  }, 300);
 }
 </script>
 

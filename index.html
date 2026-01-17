@@ -34,12 +34,6 @@
       border-radius: 32px;
       padding: 32px 24px;
       box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-      animation: slideIn 0.4s ease-out;
-    }
-    
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(30px); }
-      to { opacity: 1; transform: translateY(0); }
     }
     
     h1 {
@@ -48,10 +42,6 @@
       font-weight: 800;
       color: #1f2937;
       margin-bottom: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
     }
     
     .subtitle {
@@ -73,45 +63,27 @@
       margin-bottom: 8px;
     }
     
-    select, input[type="text"] {
+    input[type="text"] {
       width: 100%;
       padding: 16px;
       border: 2px solid #e5e7eb;
       border-radius: 16px;
-      font-size: 16px;
+      font-size: 18px;
       font-family: 'Noto Sans KR', sans-serif;
       transition: all 0.2s;
       background: white;
+      text-align: center;
+      font-weight: 600;
     }
     
-    select:focus, input[type="text"]:focus {
+    input[type="text"]:focus {
       outline: none;
       border-color: #667eea;
       box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
     }
     
-    /* 차량번호 입력 강조 */
-    #carNum {
-      margin-top: 12px;
-      font-size: 18px;
-      font-weight: 600;
-      text-align: center;
-      letter-spacing: 1px;
-    }
-    
-    .task-display {
-      padding: 16px;
-      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
-      border-radius: 16px;
-      text-align: center;
-      font-weight: 600;
-      color: #374151;
-      font-size: 16px;
-    }
-    
     .tracking-zone {
       margin: 32px 0;
-      position: relative;
     }
     
     #toggleBtn {
@@ -129,21 +101,6 @@
       justify-content: center;
       gap: 16px;
       transition: all 0.3s;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    #toggleBtn::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: inherit;
-      opacity: 0;
-      transition: opacity 0.3s;
-    }
-    
-    #toggleBtn:active::before {
-      opacity: 0.3;
     }
     
     #toggleBtn.inactive {
@@ -164,7 +121,6 @@
     
     .icon {
       font-size: 64px;
-      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
     }
     
     .status-badge {
@@ -177,156 +133,31 @@
       font-weight: 600;
       font-size: 14px;
       margin-bottom: 20px;
-      animation: fadeIn 0.3s;
     }
     
     .status-badge.active {
       display: block;
     }
     
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .photo-section {
-      margin-top: 32px;
-    }
-    
-    .photo-btn {
-      width: 100%;
-      padding: 18px;
-      background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-      color: white;
-      border: none;
-      border-radius: 16px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 10px;
-      transition: all 0.2s;
-    }
-    
-    .photo-btn:active {
-      transform: scale(0.98);
-    }
-    
-    .admin-notice {
-      margin-top: 32px;
-      padding: 20px;
-      background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-      border-radius: 16px;
-      border: 2px solid #fbbf24;
-    }
-    
-    .admin-notice h3 {
-      font-size: 16px;
-      font-weight: 700;
-      color: #92400e;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .admin-content {
-      color: #78350f;
-      font-size: 14px;
-      line-height: 1.6;
-    }
-    
-    .footer {
-      margin-top: 24px;
-      text-align: center;
-      color: #9ca3af;
-      font-size: 13px;
-    }
-    
-    /* Modal */
-    .modal {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.7);
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-      animation: fadeIn 0.2s;
-    }
-    
-    .modal.active {
-      display: flex;
-    }
-    
-    .modal-content {
-      background: white;
-      border-radius: 24px;
-      padding: 28px;
-      width: 90%;
-      max-width: 400px;
-      max-height: 80vh;
+    .debug-info {
+      margin-top: 20px;
+      padding: 16px;
+      background: #f3f4f6;
+      border-radius: 12px;
+      font-size: 12px;
+      color: #6b7280;
+      max-height: 200px;
       overflow-y: auto;
     }
     
-    .modal h2 {
-      margin-bottom: 20px;
-      color: #1f2937;
-      font-size: 20px;
+    .debug-info div {
+      margin-bottom: 6px;
+      padding: 4px 0;
+      border-bottom: 1px solid #e5e7eb;
     }
     
-    .modal input[type="file"] {
-      width: 100%;
-      padding: 12px;
-      border: 2px dashed #d1d5db;
-      border-radius: 12px;
-      margin-bottom: 16px;
-    }
-    
-    .modal textarea {
-      width: 100%;
-      min-height: 100px;
-      padding: 12px;
-      border: 2px solid #e5e7eb;
-      border-radius: 12px;
-      font-family: 'Noto Sans KR', sans-serif;
-      font-size: 14px;
-      margin-bottom: 16px;
-      resize: vertical;
-    }
-    
-    .modal-buttons {
-      display: flex;
-      gap: 12px;
-    }
-    
-    .modal-buttons button {
-      flex: 1;
-      padding: 14px;
-      border: none;
-      border-radius: 12px;
-      font-weight: 600;
-      cursor: pointer;
-      font-size: 15px;
-    }
-    
-    .btn-submit {
-      background: #10b981;
-      color: white;
-    }
-    
-    .btn-cancel {
-      background: #e5e7eb;
-      color: #374151;
-    }
-    
-    .preview-img {
-      max-width: 100%;
-      border-radius: 12px;
-      margin: 12px 0;
-    }
+    .success { color: #10b981; font-weight: bold; }
+    .error { color: #ef4444; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -341,15 +172,7 @@
   
   <div class="input-group">
     <label>📋 차량번호</label>
-    <select id="carNumSelect">
-      <option value="">새 차량번호 입력...</option>
-    </select>
     <input type="text" id="carNum" placeholder="예: 12가3456" inputmode="text">
-  </div>
-  
-  <div class="input-group">
-    <label>📌 현재 업무</label>
-    <div class="task-display" id="taskText">로딩 중...</div>
   </div>
   
   <div class="tracking-zone">
@@ -359,33 +182,9 @@
     </button>
   </div>
   
-  <div class="photo-section">
-    <button class="photo-btn" onclick="openPhotoModal()">
-      📸 사진 전송
-    </button>
-  </div>
-  
-  <div class="admin-notice">
-    <h3>📢 관리자 메시지</h3>
-    <div class="admin-content" id="adminMemo">메시지가 없습니다.</div>
-  </div>
-  
-  <div class="footer">
-    실시간 GPS 위치 추적 시스템 v2.0
-  </div>
-</div>
-
-<!-- Photo Modal -->
-<div class="modal" id="photoModal">
-  <div class="modal-content">
-    <h2>📸 사진 전송</h2>
-    <input type="file" id="photoInput" accept="image/*" capture="environment" onchange="previewPhoto()">
-    <img id="photoPreview" class="preview-img" style="display:none;">
-    <textarea id="photoMemo" placeholder="메모 입력 (선택사항)"></textarea>
-    <div class="modal-buttons">
-      <button class="btn-cancel" onclick="closePhotoModal()">취소</button>
-      <button class="btn-submit" onclick="uploadPhoto()">전송</button>
-    </div>
+  <div class="debug-info" id="debugInfo">
+    <strong>📊 연결 상태</strong>
+    <div id="debugLog">시스템 초기화 중...</div>
   </div>
 </div>
 
@@ -401,6 +200,7 @@ const firebaseConfig = {
   appId: "1:645185980587:web:f2b54d5df01cb14d300fee"
 };
 
+// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.database();
@@ -409,74 +209,57 @@ const db = firebase.database();
 let uid = null;
 let watchId = null;
 let isTracking = false;
-const carNums = JSON.parse(localStorage.getItem('carNums') || '[]').slice(0, 10).reverse();
+let locationUpdateCount = 0;
+
+// Debug logging
+function addDebugLog(message, type = 'info') {
+  const debugLog = document.getElementById('debugLog');
+  const time = new Date().toLocaleTimeString('ko-KR');
+  const logEntry = document.createElement('div');
+  
+  logEntry.className = type;
+  logEntry.innerHTML = `<strong>${time}</strong>: ${message}`;
+  debugLog.appendChild(logEntry);
+  
+  if (debugLog.children.length > 10) {
+    debugLog.removeChild(debugLog.firstChild);
+  }
+  
+  console.log(`[${time}] ${message}`);
+}
 
 // Initialize
 window.addEventListener('load', () => {
-  loadCarNumbers();
   initAuth();
-  setupCarInput();
+  
+  // 저장된 차량번호 불러오기
+  const savedCarNum = localStorage.getItem('lastCarNum');
+  if (savedCarNum) {
+    document.getElementById('carNum').value = savedCarNum;
+  }
 });
-
-function loadCarNumbers() {
-  const select = document.getElementById('carNumSelect');
-  carNums.forEach(num => {
-    const option = document.createElement('option');
-    option.value = option.textContent = num;
-    select.appendChild(option);
-  });
-}
-
-// ✅ 차량번호 입력 로직 완전 수정
-function setupCarInput() {
-  const select = document.getElementById('carNumSelect');
-  const input = document.getElementById('carNum');
-  
-  // 셀렉트 변경 시
-  select.addEventListener('change', function() {
-    if (this.value === "") {
-      // 새 차량번호 입력
-      input.style.display = 'block';
-      input.value = '';
-      input.focus();
-    } else {
-      // 기존 차량번호 선택
-      input.style.display = 'block';
-      input.value = this.value;
-    }
-  });
-  
-  // 입력창에 직접 입력
-  input.addEventListener('input', function() {
-    select.value = "";
-  });
-  
-  // 초기 상태: 입력창 보이기
-  input.style.display = 'block';
-}
 
 // Firebase Authentication
 function initAuth() {
+  addDebugLog('Firebase 인증 시작...');
+  
   auth.signInAnonymously()
     .then(credential => {
       uid = credential.user.uid;
-      console.log("✅ 익명 로그인 성공:", uid);
+      addDebugLog(`✅ 로그인 성공 (${uid.substring(0, 8)}...)`, 'success');
       
-      // Listen for task updates
-      db.ref('users/' + uid).on('value', snapshot => {
-        const data = snapshot.val();
-        document.getElementById('taskText').textContent = data?.task || '업무 미지정';
-      });
-      
-      // Listen for admin messages
-      db.ref('admin/messages/' + uid).on('value', snapshot => {
-        const data = snapshot.val();
-        document.getElementById('adminMemo').textContent = data?.message || '메시지가 없습니다.';
+      // 연결 상태 확인
+      db.ref('.info/connected').on('value', snapshot => {
+        if (snapshot.val() === true) {
+          addDebugLog('✅ Firebase 연결됨', 'success');
+        } else {
+          addDebugLog('⚠️ Firebase 연결 끊김', 'error');
+        }
       });
     })
     .catch(error => {
-      console.error("❌ 인증 오류:", error);
-      alert("인증 오류가 발생했습니다.\n페이지를 새로고침해주세요.\n\n" + error.message);
+      addDebugLog(`❌ 인증 오류: ${error.message}`, 'error');
+      console.error("인증 오류:", error);
     });
 }
 
@@ -509,8 +292,9 @@ function startTracking(carNum) {
   }
   
   // Save car number
-  const nums = [carNum, ...carNums.filter(n => n !== carNum)].slice(0, 10);
-  localStorage.setItem('carNums', JSON.stringify(nums));
+  localStorage.setItem('lastCarNum', carNum);
+  
+  addDebugLog(`🚗 차량 ${carNum} 추적 시작`);
   
   // Update UI
   const btn = document.getElementById('toggleBtn');
@@ -521,27 +305,52 @@ function startTracking(carNum) {
   btnText.textContent = '위치 전송 중지';
   badge.classList.add('active');
   isTracking = true;
+  locationUpdateCount = 0;
   
   // Start watching position
   watchId = navigator.geolocation.watchPosition(
     position => {
       const { latitude, longitude, accuracy } = position.coords;
+      locationUpdateCount++;
       
-      db.ref('locations/' + uid).set({
+      const locationData = {
+        carNum: carNum,
         lat: latitude,
         lng: longitude,
         accuracy: accuracy,
-        carNum: carNum,
+        task: '업무 진행중',
         timestamp: Date.now()
-      }).then(() => {
-        console.log("📍 위치 전송 성공:", latitude, longitude);
-      }).catch(error => {
-        console.error("❌ 위치 전송 실패:", error);
-      });
+      };
+      
+      addDebugLog(`📍 #${locationUpdateCount}: (${latitude.toFixed(6)}, ${longitude.toFixed(6)}) 정확도: ${Math.round(accuracy)}m`);
+      
+      // Firebase에 데이터 저장
+      db.ref(`locations/${uid}`).set(locationData)
+        .then(() => {
+          addDebugLog(`✅ 전송 성공 #${locationUpdateCount}`, 'success');
+        })
+        .catch(error => {
+          addDebugLog(`❌ 전송 실패: ${error.message}`, 'error');
+        });
     },
     error => {
-      console.error("❌ 위치 오류:", error);
-      alert("위치 정보를 가져올 수 없습니다.\n\n" + error.message);
+      console.error("위치 오류:", error);
+      let errorMsg = '위치 오류: ';
+      switch(error.code) {
+        case error.PERMISSION_DENIED:
+          errorMsg += '위치 권한이 거부되었습니다.';
+          break;
+        case error.POSITION_UNAVAILABLE:
+          errorMsg += '위치 정보를 사용할 수 없습니다.';
+          break;
+        case error.TIMEOUT:
+          errorMsg += '위치 요청 시간이 초과되었습니다.';
+          break;
+        default:
+          errorMsg += error.message;
+      }
+      addDebugLog(`❌ ${errorMsg}`, 'error');
+      alert(errorMsg);
       stopTracking();
     },
     {
@@ -566,69 +375,11 @@ function stopTracking() {
   btnText.textContent = '위치 전송 시작';
   badge.classList.remove('active');
   isTracking = false;
-}
-
-// Photo Modal
-function openPhotoModal() {
-  document.getElementById('photoModal').classList.add('active');
-}
-
-function closePhotoModal() {
-  document.getElementById('photoModal').classList.remove('active');
-  document.getElementById('photoInput').value = '';
-  document.getElementById('photoPreview').style.display = 'none';
-  document.getElementById('photoMemo').value = '';
-}
-
-function previewPhoto() {
-  const file = document.getElementById('photoInput').files[0];
-  const preview = document.getElementById('photoPreview');
   
-  if (file) {
-    const reader = new FileReader();
-    reader.onload = e => {
-      preview.src = e.target.result;
-      preview.style.display = 'block';
-    };
-    reader.readAsDataURL(file);
-  }
+  addDebugLog(`⏹️ 위치 전송 중지 (총 ${locationUpdateCount}회)`);
 }
 
-function uploadPhoto() {
-  if (!uid) {
-    alert("로그인 중입니다. 잠시만 기다려주세요.");
-    return;
-  }
-  
-  const file = document.getElementById('photoInput').files[0];
-  const memo = document.getElementById('photoMemo').value.trim();
-  
-  if (!file) {
-    alert("사진을 선택해주세요.");
-    return;
-  }
-  
-  const reader = new FileReader();
-  reader.onload = e => {
-    const photoData = {
-      image: e.target.result,
-      memo: memo,
-      timestamp: Date.now()
-    };
-    
-    db.ref('photos/' + uid).push(photoData)
-      .then(() => {
-        alert("✅ 사진이 전송되었습니다!");
-        closePhotoModal();
-      })
-      .catch(error => {
-        alert("❌ 전송 실패: " + error.message);
-      });
-  };
-  reader.readAsDataURL(file);
-}
-
-// Prevent accidental exit when tracking
+// Prevent accidental exit
 window.addEventListener('beforeunload', e => {
   if (isTracking) {
     e.preventDefault();
