@@ -3,26 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>위치 관제 시스템</title>
+    <title>차량 관제 시스템</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-100 flex items-center justify-center min-h-screen">
-    <div class="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-sm text-center border border-slate-200">
-        <h1 class="text-2xl font-black text-slate-800 mb-8">차량 관제 시스템</h1>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen p-6">
+    <div class="bg-white p-10 rounded-[3rem] shadow-2xl w-full max-w-sm text-center border border-slate-200">
+        <div class="mb-8 flex justify-center">
+            <div class="bg-blue-600 p-4 rounded-3xl shadow-lg shadow-blue-200">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="white"><path d="M18.92 11.01C18.72 10.42 18.16 10 17.5 10H6.5C5.84 10 5.29 10.42 5.08 11.01L4 14V19C4 19.55 4.45 20 5 20H6C6.55 20 7 19.55 7 19V18H17V19C17 19.55 17.45 20 18 20H19C19.55 20 20 19.55 20 19V14L18.92 11.01ZM6.5 12H17.5L18.22 14H5.78L6.5 12ZM7 17C6.45 17 6 16.55 6 16C6 15.45 6.45 15 7 15C7.55 15 8 15.45 8 16C8 16.55 7.55 17 7 17ZM17 17C16.45 17 16 16.55 16 16C16 15.45 16.45 15 17 15C17.55 15 18 15.45 18 16C18 16.55 17.55 17 17 17Z"/></svg>
+            </div>
+        </div>
+        <h1 class="text-2xl font-black text-slate-800 mb-2 tracking-tighter">차량 관제 시스템</h1>
+        <p class="text-slate-400 text-sm mb-10">사용자 모드를 선택하세요.</p>
         
         <div class="space-y-4">
-            <!-- 관리자용 버튼 -->
-            <a href="admin.html" class="block w-full py-4 bg-slate-800 text-white rounded-2xl font-bold shadow-lg hover:bg-slate-700 transition-all">
-                💻 PC 관리자 모드
-            </a>
-            
-            <!-- 승무원용 버튼 -->
-            <a href="crew.html" class="block w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg hover:bg-blue-500 transition-all">
-                📱 승무원 위치 전송
-            </a>
+            <a href="admin.html" class="block w-full py-5 bg-slate-800 text-white rounded-2xl font-bold shadow-xl hover:scale-105 transition-all">💻 PC 관리자 모드</a>
+            <a href="crew.html" class="block w-full py-5 bg-blue-600 text-white rounded-2xl font-bold shadow-xl hover:scale-105 transition-all">📱 승무원 위치 전송</a>
         </div>
-        
-        <p class="mt-8 text-slate-400 text-xs italic">본인에게 맞는 모드를 선택하세요.</p>
     </div>
 </body>
 </html>
