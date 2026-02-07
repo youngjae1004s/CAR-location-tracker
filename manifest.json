@@ -1,0 +1,15 @@
+{
+  "name": "승무원 위치관제",
+  "short_name": "위치관제",
+  "start_url": "crew.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/5583/5583321.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
