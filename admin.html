@@ -4,47 +4,40 @@
     <meta charset="UTF-8">
     <title>PC 실시간 관제 시스템</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 1. 지도를 그리는 도구(Leaflet) 연결 -->
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    
-    <!-- 2. 데이터베이스(Firebase) 연결 -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
-    
     <style>
-        /* 지도가 화면 전체에 꽉 차게 보이도록 설정 */
-        #map { 
-            height: 100vh; 
-            width: 100%; 
-            background-color: #f8fafc; /* 지도가 뜨기 전 배경색 */
-        }
+        #map { height: 100vh; width: 100%; z-index: 1; }
         .glass { background: rgba(255, 255, 255, 0.9); backdrop-filter: blur(15px); }
-        .leaflet-container { font-family: 'Pretendard', sans-serif !important; }
+        
+        /* 차량 아이콘 애니메이션 효과 (접속 중일 때만 살짝 위아래로 움직임) */
+        .car-active { animation: bounce 2s infinite; }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-3px); }
+        }
     </style>
 </head>
-<body class="m-0 p-0 overflow-hidden bg-slate-100">
-
-    <!-- 지도가 나타날 공간 -->
+<body class="m-0 overflow-hidden bg-slate-100">
     <div id="map"></div>
 
-    <!-- 우측 상단 관제 패널 -->
-    <div class="absolute top-6 right-6 z-[1000] w-96 max-h-[90vh] glass rounded-[2.5rem] shadow-2xl border border-white flex flex-col overflow-hidden">
-        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white/50">
-            <h2 class="text-xl font-black text-slate-800 flex items-center gap-2">
+    <div class="absolute top-6 right-6 z-[1000] w-96 max-h-[90vh] glass rounded-[2.5rem] shadow-2xl border border-white flex flex-col overflow-hidden text-sm">
+        <div class="p-6 border-b border-slate-100 flex justify-between items-center bg-white/50 text-base font-black">
+            <h2 class="text-slate-800 flex items-center gap-2">
                 <span class="w-3 h-3 bg-green-500 rounded-full animate-pulse"></span>
                 실시간 관제
             </h2>
-            <a href="https://open.kakao.com/o/gc3XQ9ei" target="_blank" class="px-4 py-2 bg-yellow-400 text-yellow-900 text-[10px] font-black rounded-full shadow-sm hover:bg-yellow-500 transition-all">카톡방 열기</a>
+            <a href="https://open.kakao.com/o/gc3XQ9ei" target="_blank" class="px-4 py-2 bg-yellow-400 text-yellow-900 text-[10px] font-black rounded-full shadow-sm hover:bg-yellow-500">카톡방 열기</a>
         </div>
         
         <div id="crew-list" class="flex-1 overflow-y-auto p-4 space-y-4">
-            <p class="text-center text-slate-400 py-10 text-sm italic">승무원의 접속을 기다리는 중...</p>
+            <p class="text-center text-slate-400 py-10">데이터 로딩 중...</p>
         </div>
     </div>
 
     <script>
-        // 제공해주신 Firebase 설정값 (싱가포르 서버 주소 적용)
         const firebaseConfig = {
             apiKey: "AIzaSyBMcqlyHzCO0k6G-6Fzb7AHso2A3gGAbq8",
             authDomain: "car-location-tracker-438f0.firebaseapp.com",
@@ -58,53 +51,53 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 3. 지도 초기화 (기본 위치: 서울)
-        // zoomControl: false를 주어 왼쪽 상단의 +, - 버튼을 숨기고 깔끔하게 처리
         const map = L.map('map', { zoomControl: false }).setView([37.5665, 126.9780], 12);
+        L.tileLayer('https://{s}.tile.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png').addTo(map);
 
-        // 4. 지도 타일(이미지) 불러오기 - 가장 안정적인 OpenStreetMap 스타일
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '© OpenStreetMap'
-        }).addTo(map);
+        // --- 차량 아이콘 생성 함수 ---
+        function createCarIcon(isOnline) {
+            const color = isOnline ? '#2563eb' : '#94a3b8'; // 접속중 블루, 미접속 그레이
+            const shadow = isOnline ? 'filter: drop-shadow(0 4px 6px rgba(37, 99, 235, 0.4));' : '';
+            
+            return L.divIcon({
+                html: `
+                    <div class="${isOnline ? 'car-active' : ''}" style="${shadow}">
+                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <circle cx="12" cy="12" r="12" fill="white" fill-opacity="0.9" />
+                            <path d="M18.92 11.01C18.72 10.42 18.16 10 17.5 10H6.5C5.84 10 5.29 10.42 5.08 11.01L4 14V19C4 19.55 4.45 20 5 20H6C6.55 20 7 19.55 7 19V18H17V19C17 19.55 17.45 20 18 20H19C19.55 20 20 19.55 20 19V14L18.92 11.01ZM6.85 11.5H17.15L17.88 13.5H6.12L6.85 11.5ZM6 16.5C5.45 16.5 5 16.05 5 15.5C5 14.95 5.45 14.5 6 14.5C6.55 14.5 7 14.95 7 15.5C7 16.05 6.55 16.5 6 16.5ZM18 16.5C17.45 16.5 17 16.05 17 15.5C17 14.95 17.45 14.5 18 14.5C18.55 14.5 19 14.95 19 15.5C19 16.05 18.55 16.5 18 16.5Z" fill="${color}"/>
+                        </svg>
+                    </div>`,
+                className: '',
+                iconSize: [40, 40],
+                iconAnchor: [20, 20]
+            });
+        }
 
         const markers = {};
 
-        // 5. 실시간 데이터베이스 감시
         db.ref('crews').on('value', snapshot => {
             const crews = snapshot.val();
             const listEl = document.getElementById('crew-list');
             listEl.innerHTML = '';
-
-            if(!crews) {
-                listEl.innerHTML = '<p class="text-center text-slate-400 py-10 text-xs italic text-slate-400">등록된 승무원이 없습니다.</p>';
-                return;
-            }
+            if(!crews) return listEl.innerHTML = '<p class="text-center text-slate-400 py-10">대기 중입니다.</p>';
 
             for(let id in crews) {
                 const crew = crews[id];
-                // 1분 이내 업데이트 되었는지 확인
                 const isOnline = (Date.now() - crew.lastSeen < 60000) && (crew.active !== false);
 
-                // 지도 마커 표시/업데이트
+                // 마커 생성 및 아이콘 업데이트
                 if(!markers[id]) {
-                    markers[id] = L.marker([crew.lat, crew.lng]).addTo(map);
+                    markers[id] = L.marker([crew.lat, crew.lng], { icon: createCarIcon(isOnline) }).addTo(map);
                 } else {
                     markers[id].setLatLng([crew.lat, crew.lng]);
+                    markers[id].setIcon(createCarIcon(isOnline)); // 상태에 따라 아이콘 색상 변경
                 }
                 
-                // 미접속 시 마커 투명도 조절
-                markers[id].setOpacity(isOnline ? 1 : 0.4);
-                markers[id].bindPopup(`<b>${crew.name}</b> [${crew.car}]<br>${crew.speed || 0} km/h`);
+                markers[id].bindPopup(`<b>${crew.name}</b> [${crew.car}]`);
 
-                // 우측 리스트 아이템 생성
                 const item = document.createElement('div');
                 item.className = `p-5 rounded-3xl border-2 transition-all cursor-pointer ${isOnline ? 'bg-white border-blue-50 shadow-sm' : 'bg-white/50 border-transparent text-slate-400'}`;
-                
-                // 클릭 시 해당 위치로 부드럽게 이동
-                item.onclick = () => { 
-                    map.flyTo([crew.lat, crew.lng], 15);
-                    markers[id].openPopup();
-                };
+                item.onclick = () => { map.flyTo([crew.lat, crew.lng], 16); markers[id].openPopup(); };
 
                 item.innerHTML = `
                     <div class="flex justify-between items-start">
@@ -117,17 +110,11 @@
                             </div>
                             <div class="text-xs font-medium ${isOnline ? 'text-blue-600' : 'text-slate-400'} mt-1">${crew.car}</div>
                         </div>
-                        <div class="text-right text-xl font-black ${isOnline ? 'text-slate-700' : 'text-slate-300'}">
-                            ${crew.speed || 0}<span class="text-xs font-normal ml-1">km/h</span>
-                        </div>
+                        <div class="text-right text-xl font-black ${isOnline ? 'text-slate-700' : 'text-slate-300'}">${crew.speed || 0}<span class="text-xs font-normal ml-1 text-slate-400">km/h</span></div>
                     </div>
-                    ${crew.currentAddr ? `
-                        <div class="mt-3 p-3 bg-slate-100/50 rounded-xl text-[10px] text-slate-600 leading-tight border border-slate-100">
-                            📍 주소: ${crew.currentAddr}
-                        </div>
-                    ` : ''}
+                    ${crew.currentAddr ? `<div class="mt-3 p-3 bg-slate-100/50 rounded-xl text-[10px] text-slate-600 leading-tight">📍 ${crew.currentAddr}</div>` : ''}
                     <div class="flex justify-between items-center mt-4 pt-3 border-t border-slate-50 text-[9px]">
-                        <span>마지막 확인: ${new Date(crew.lastSeen).toLocaleTimeString()}</span>
+                        <span>${new Date(crew.lastSeen).toLocaleTimeString()} 확인</span>
                         <button onclick="event.stopPropagation(); deleteCrew('${id}')" class="text-red-300 hover:text-red-500 font-bold transition-all">삭제</button>
                     </div>
                 `;
@@ -135,15 +122,8 @@
             }
         });
 
-        // 데이터 삭제 함수
         function deleteCrew(id) {
-            if(confirm(id + ' 님의 관제 기록을 목록에서 삭제하시겠습니까?')) {
-                if(markers[id]) {
-                    map.removeLayer(markers[id]);
-                    delete markers[id];
-                }
-                db.ref('crews/' + id).remove();
-            }
+            if(confirm(id + '님의 정보를 삭제하시겠습니까?')) db.ref('crews/' + id).remove();
         }
     </script>
 </body>
