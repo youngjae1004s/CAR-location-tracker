@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>위치 관제 시스템</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-100 flex items-center justify-center min-h-screen">
+    <div class="bg-white p-8 rounded-[2.5rem] shadow-2xl w-full max-w-sm text-center border border-slate-200">
+        <h1 class="text-2xl font-black text-slate-800 mb-8">차량 관제 시스템</h1>
+        
+        <div class="space-y-4">
+            <!-- 관리자용 버튼 -->
+            <a href="admin.html" class="block w-full py-4 bg-slate-800 text-white rounded-2xl font-bold shadow-lg hover:bg-slate-700 transition-all">
+                💻 PC 관리자 모드
+            </a>
+            
+            <!-- 승무원용 버튼 -->
+            <a href="crew.html" class="block w-full py-4 bg-blue-600 text-white rounded-2xl font-bold shadow-lg hover:bg-blue-500 transition-all">
+                📱 승무원 위치 전송
+            </a>
+        </div>
+        
+        <p class="mt-8 text-slate-400 text-xs italic">본인에게 맞는 모드를 선택하세요.</p>
+    </div>
+</body>
+</html>
